@@ -7,16 +7,42 @@ per ogni nuova partita Dota 2 di **HarlockSP**
 **Costo zero**: gira su GitHub Actions ogni 15 minuti e usa l'API gratuita di
 [OpenDota](https://docs.opendota.com/). Non serve nessun server.
 
+Cosa fa:
+- 📣 **nel canale**: un messaggio per ogni nuova partita (con 🌟 per le partite notevoli e le serie
+  di vittorie/sconfitte) e, alle 23, il **riepilogo della giornata** se HarlockSP ha giocato;
+- 💬 **in chat privata con il bot**: chiunque può chiedere `/ultima` o `/riepilogo oggi|settimana|mese`.
+
 Esempio di messaggio:
 
 ```
-✅ VITTORIA – HarlockSP
-🦸 Eroe: Anti-Mage (Radiant)
-⚔️ K/D/A: 12/3/8
-💰 GPM/XPM: 650/720 · 🗡 LH: 312
-⏱ Durata: 38:21 · 🎮 Ranked All Pick
+🌟 ✅ VITTORIA – HarlockSP
+🦸 Eroe: Anti-Mage (Dire)
+⚔️ K/D/A: 14/0/12 (KDA 26.0)
+💰 GPM/XPM: 742/810 · 🗡 LH: 388
+⏱ Durata: 43:10 · 🎮 Classificata · All Pick
+🛡 Partita perfetta: 0 morti!
+🔥 3 vittorie di fila!
 🔗 Dotabuff · OpenDota
 ```
+
+## Per gli amici
+
+1. Entrate nel canale **[t.me/harlocksp_updates](https://t.me/harlocksp_updates)**: si può solo leggere.
+2. Volete un riepilogo? Aprite **@Harlocksp_updatesbot**, premete **Avvia** e scrivete un comando:
+
+| Comando | Risposta |
+|---|---|
+| `/ultima` | scheda dell'ultima partita |
+| `/riepilogo oggi` | partite di oggi |
+| `/riepilogo settimana` | ultimi 7 giorni |
+| `/riepilogo mese` | ultimi 30 giorni |
+
+⏳ Il bot non ha un server sempre acceso: legge i messaggi a ogni giro (circa ogni 15 minuti),
+quindi la risposta può arrivare con qualche minuto di ritardo.
+
+Privacy: il bot non salva chi gli scrive (nessun ID o nome nel repository) e i log pubblici
+di GitHub riportano solo quante risposte sono state inviate. Risponde a massimo 3 comandi
+per persona per giro.
 
 ---
 
@@ -91,6 +117,7 @@ pip install -r requirements-dev.txt
 
 python -m pytest                          # test (nessuna chiamata di rete)
 python -m src.main --dry-run --last 3     # stampa i messaggi delle ultime 3 partite
+python -m src.main --dry-run --comando "/riepilogo settimana"   # prova un comando
 ```
 
 `--dry-run` stampa i messaggi invece di inviarli, **non modifica** `state.json` e non richiede i
@@ -110,6 +137,17 @@ python -m src.main
 | `player_id`    | account ID Dota 2 (quello di Dotabuff/OpenDota) |
 | `display_name` | nome mostrato nei messaggi          |
 | `language`     | lingua dei messaggi (per ora `it`)  |
+| `timezone`     | fuso orario dei riepiloghi (default `Europe/Rome`; il cron di GitHub è in UTC, la conversione la fa il codice) |
+| `daily_summary_hour` | ora del riepilogo giornaliero nel canale (default `23`; `null` per disattivarlo) |
+
+### Consigliato in BotFather (facoltativo)
+
+- **Bot Settings → Allow Groups? → Turn off**: nessuno può aggiungere il bot ai gruppi
+  (il canale continua a funzionare).
+- **Edit Bot → Edit Description**: il testo che gli amici vedono prima di premere Avvia, per esempio
+  *"Aggiornamenti Dota 2 di HarlockSP. Scrivi /riepilogo settimana"*.
+
+Il menu dei comandi (il tasto "/" nella chat) viene impostato automaticamente dal bot.
 
 ## Risoluzione problemi
 
@@ -121,6 +159,8 @@ python -m src.main
 | `HTTP 403 – … not enough rights`             | il bot non è amministratore con permesso di pubblicare |
 | `OpenDota …: HTTP 5xx dopo 4 tentativi`      | OpenDota temporaneamente giù: si ritenta da solo al giro dopo |
 | push rifiutato (`403`) nello step "Salva state.json" | *Workflow permissions* non impostato su "Read and write" |
+| il bot non risponde ai comandi               | aspetta il giro successivo (fino a ~15-30 min); controlla che il workflow sia verde |
+| `getUpdates … 409 Conflict`                  | al bot è collegato un webhook o un altro programma che legge i messaggi: va rimosso |
 | il workflow non parte più da solo            | GitHub disattiva i cron dopo 60 giorni senza attività: riattivalo da Actions |
 
 Nota: se una partita non ha ancora i dati completi o il profilo Dota è privato
