@@ -51,8 +51,20 @@ LOBBY_TYPES: dict[int, str] = {
     12: "Evento",
 }
 WEEKDAYS = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
-MONTHS = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio",
-          "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+MONTHS = [
+    "gennaio",
+    "febbraio",
+    "marzo",
+    "aprile",
+    "maggio",
+    "giugno",
+    "luglio",
+    "agosto",
+    "settembre",
+    "ottobre",
+    "novembre",
+    "dicembre",
+]
 
 STREAK_MIN = 3
 KDA_STELLAR = 10.0
@@ -77,7 +89,7 @@ def format_date(d: date) -> str:
 def mode_name(game_mode: int | None, lobby_type: int | None) -> str:
     mode = GAME_MODES.get(game_mode or 0, f"Modalità {game_mode}")
     lobby = LOBBY_TYPES.get(lobby_type) if lobby_type is not None else None
-    if not lobby or lobby == "Normale" or lobby == mode:
+    if not lobby or lobby in ("Normale", mode):
         return mode
     return f"{lobby} · {mode}"
 

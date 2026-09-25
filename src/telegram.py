@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 import requests
 
@@ -74,7 +75,7 @@ class TelegramClient:
             except requests.RequestException as exc:
                 # non includere exc: il messaggio contiene l'URL con il token
                 if attempt < self.retries:
-                    self.sleep(2 ** attempt)
+                    self.sleep(2**attempt)
                     continue
                 raise TelegramError(f"{method}: errore di rete ({type(exc).__name__})") from None
 
@@ -86,7 +87,7 @@ class TelegramClient:
                     self.sleep(wait)
                     continue
             if resp.status_code >= 500 and attempt < self.retries:
-                self.sleep(2 ** attempt)
+                self.sleep(2**attempt)
                 continue
             if not resp.ok or not body.get("ok"):
                 desc = body.get("description", "risposta non valida")

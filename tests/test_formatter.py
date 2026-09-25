@@ -1,26 +1,33 @@
 import pytest
 
 from src.formatter import (
-    format_date, format_duration, format_match, format_summary, highlights, is_radiant, is_win, mode_name,
+    format_date,
+    format_duration,
+    format_match,
+    format_summary,
+    highlights,
+    is_radiant,
+    is_win,
+    mode_name,
 )
 from src.stats import summarize
 from tests.conftest import make_match
 
 
-@pytest.mark.parametrize("slot,radiant", [(0, True), (4, True), (127, True), (128, False), (132, False)])
+@pytest.mark.parametrize(("slot", "radiant"), [(0, True), (4, True), (127, True), (128, False), (132, False)])
 def test_is_radiant(slot, radiant):
     assert is_radiant(slot) is radiant
 
 
 @pytest.mark.parametrize(
-    "slot,radiant_win,expected",
+    ("slot", "radiant_win", "expected"),
     [(0, True, True), (0, False, False), (128, True, False), (128, False, True)],
 )
 def test_is_win(slot, radiant_win, expected):
     assert is_win(make_match(1, player_slot=slot, radiant_win=radiant_win)) is expected
 
 
-@pytest.mark.parametrize("secs,text", [(0, "0:00"), (59, "0:59"), (2301, "38:21"), (3725, "1:02:05")])
+@pytest.mark.parametrize(("secs", "text"), [(0, "0:00"), (59, "0:59"), (2301, "38:21"), (3725, "1:02:05")])
 def test_format_duration(secs, text):
     assert format_duration(secs) == text
 
@@ -69,21 +76,23 @@ def test_highlights_perfect_game():
 
 def test_highlights_stellar_kda_and_massacre():
     lines = highlights(make_match(1, kills=22, deaths=2, assists=10))
-    assert any("KDA stellare" in l for l in lines) and any("22 kill" in l for l in lines)
+    assert any("KDA stellare" in line for line in lines) and any("22 kill" in line for line in lines)
 
 
 def test_highlights_streaks():
-    assert any("3 vittorie di fila" in l for l in highlights(make_match(1, deaths=5), streak=3))
-    assert any("4 sconfitte di fila" in l for l in highlights(make_match(1, deaths=5), streak=-4))
+    assert any("3 vittorie di fila" in line for line in highlights(make_match(1, deaths=5), streak=3))
+    assert any("4 sconfitte di fila" in line for line in highlights(make_match(1, deaths=5), streak=-4))
     assert highlights(make_match(1, deaths=5), streak=2) == []
 
 
 def test_format_summary():
-    s = summarize([
-        make_match(1, hero_id=1, kills=10, deaths=2, assists=5, duration=1800),
-        make_match(2, hero_id=1, radiant_win=False, kills=2, deaths=8, assists=3, duration=2400),
-        make_match(3, hero_id=2, kills=15, deaths=1, assists=9, duration=1500),
-    ])
+    s = summarize(
+        [
+            make_match(1, hero_id=1, kills=10, deaths=2, assists=5, duration=1800),
+            make_match(2, hero_id=1, radiant_win=False, kills=2, deaths=8, assists=3, duration=2400),
+            make_match(3, hero_id=2, kills=15, deaths=1, assists=9, duration=1500),
+        ]
+    )
     text = format_summary("Riepilogo di oggi", s, {1: "Anti-Mage", 2: "Axe"}, "HarlockSP")
     assert "Partite: <b>3</b> (2V – 1S)" in text
     assert "Win rate: <b>67%</b>" in text
@@ -98,4 +107,5 @@ def test_format_summary_empty():
 
 def test_format_date_italian():
     from datetime import date
+
     assert format_date(date(2026, 9, 25)) == "venerdì 25 settembre"

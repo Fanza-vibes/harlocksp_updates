@@ -96,7 +96,8 @@ def send_daily_summary(state: State, data: MatchData, sender: Sender, config: Co
         return EXIT_OK
     if matches:
         heroes = data.heroes({m.get("hero_id") or 0 for m in matches})
-        text = format_summary(f"Riepilogo di {format_date(target)}", summarize(matches), heroes, config.display_name)
+        title = f"Riepilogo di {format_date(target)}"
+        text = format_summary(title, summarize(matches), heroes, config.display_name)
         try:
             sender.send_message(text)
         except TelegramError as exc:
@@ -183,8 +184,14 @@ def main(argv: list[str] | None = None) -> int:
         assert config.telegram_token and config.telegram_chat_id
         sender = bot = TelegramClient(config.telegram_token, config.telegram_chat_id)
     return run(
-        config, args.state, OpenDotaClient(), sender,
-        bot=bot, dry_run=args.dry_run, last=args.last, command=args.command,
+        config,
+        args.state,
+        OpenDotaClient(),
+        sender,
+        bot=bot,
+        dry_run=args.dry_run,
+        last=args.last,
+        command=args.command,
     )
 
 
