@@ -287,3 +287,46 @@ def test_dry_run_command(state_path, capsys):
     )
     out = capsys.readouterr().out
     assert "chat prova" in out and "Riepilogo di oggi" in out
+
+
+# --- curiosità -------------------------------------------------------------
+
+
+class SenderWithIds(FakeSender):
+    def send_message(self, text, chat_id=None, reply_to=None):
+        super().send_message(text)
+        return 1000 + len(self.sent)
+
+
+def test_sent_match_is_queued_for_trivia(state_path):
+    save_state(state_path, State(last_match_id=10, last_summary_date="2026-09-24"))
+    run(CONFIG, state_path, FakeOpenDotaTrivia([make_match(11)]), SenderWithIds(), now=NOW_NOON)
+    pending = load_state(state_path).pending_trivia
+    assert [(p.match_id, p.message_id) for p in pending] == [(11, 1001)]
+    assert pending[0].requested  # analisi chiesta già nello stesso giro
+
+
+class FakeOpenDotaTrivia(FakeOpenDota):
+    def match(self, match_id):
+        return {"match_id": match_id, "version": None, "players": []}
+
+    def request_parse(self, match_id):
+        pass
+
+    def hero_keys(self):
+        return {}
+
+
+def test_dry_run_partita(state_path, capsys):
+    from src.telegram import DryRunSender
+    from tests.fixtures_match import PLAYER_ID, parsed_match
+
+    class OD(FakeOpenDotaTrivia):
+        def match(self, match_id):
+            return parsed_match(match_id=match_id)
+
+    cfg = Config(player_id=PLAYER_ID, display_name="HarlockSP")
+    run(cfg, state_path, OD([make_match(1)]), DryRunSender(), dry_run=True, trivia_match=5, now=NOW_NOON)
+    out = capsys.readouterr().out
+    assert "Curiosità della partita" in out and "ULTRA KILL" in out
+    assert not Path(state_path).exists()

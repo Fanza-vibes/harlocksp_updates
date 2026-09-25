@@ -54,3 +54,19 @@ def test_new_fields_roundtrip_and_validation(tmp_path):
     assert load_state(p) == s
     p.write_text(json.dumps({"telegram_offset": -3, "last_summary_date": "ieri", "commands_version": "1"}))
     assert load_state(p) == State()
+
+
+def test_pending_trivia_roundtrip_limit_and_validation(tmp_path):
+    from src.state import MAX_PENDING, Pending
+
+    p = tmp_path / "s.json"
+    s = State()
+    for i in range(1, MAX_PENDING + 3):
+        s.add_pending(Pending(i, 100 + i, 1_700_000_000, requested=i % 2 == 0))
+    assert len(s.pending_trivia) == MAX_PENDING and s.pending_trivia[0].match_id == 3
+    save_state(p, s)
+    assert load_state(p) == s
+    p.write_text(
+        json.dumps({"pending_trivia": [{"match_id": 1}, "x", {"match_id": 2, "message_id": 3, "since": 4}]})
+    )
+    assert load_state(p).pending_trivia == [Pending(2, 3, 4)]
