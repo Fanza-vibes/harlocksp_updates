@@ -1,0 +1,5 @@
+# Configurazione del bot. I segreti (TELEGRAM_TOKEN, TELEGRAM_CHAT_ID) NON vanno qui:
+# si passano come variabili d'ambiente / GitHub Secrets.
+player_id: 295689331
+display_name: HarlockSP
+language: it
