@@ -21,7 +21,9 @@ class TelegramError(Exception):
 
 
 class Sender(Protocol):
-    def send_message(self, text: str, chat_id: str | int | None = None) -> None: ...
+    def send_message(
+        self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
+    ) -> int | None: ...
 
 
 class TelegramClient:
@@ -44,15 +46,24 @@ class TelegramClient:
     def __repr__(self) -> str:
         return f"TelegramClient(chat_id={self.chat_id!r})"
 
-    def send_message(self, text: str, chat_id: str | int | None = None) -> None:
-        """Invia al canale, oppure a `chat_id` (risposte ai comandi in privato)."""
-        payload = {
+    def send_message(
+        self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
+    ) -> int | None:
+        """Invia al canale, oppure a `chat_id` (risposte ai comandi in privato).
+
+        Con `reply_to` il messaggio è una risposta a quello indicato. Restituisce il message_id.
+        """
+        payload: dict = {
             "chat_id": self.chat_id if chat_id is None else chat_id,
             "text": text,
             "parse_mode": "HTML",
-            "disable_web_page_preview": True,
+            "link_preview_options": {"is_disabled": True},
         }
-        self._call("sendMessage", payload)
+        if reply_to is not None:
+            # se il messaggio originale è stato cancellato, invia comunque
+            payload["reply_parameters"] = {"message_id": reply_to, "allow_sending_without_reply": True}
+        message_id = self._call("sendMessage", payload).get("result", {}).get("message_id")
+        return message_id if isinstance(message_id, int) else None
 
     def get_updates(self, offset: int | None, limit: int = 50) -> list[dict]:
         """Messaggi arrivati al bot. Con timeout=0 non resta in attesa (polling breve)."""
@@ -103,10 +114,15 @@ class DryRunSender:
         self.out = out
         self.count = 0
 
-    def send_message(self, text: str, chat_id: str | int | None = None) -> None:
+    def send_message(
+        self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
+    ) -> int | None:
         self.count += 1
         dest = "canale" if chat_id is None else f"chat {chat_id}"
+        if reply_to is not None:
+            dest += f", in risposta al messaggio {reply_to}"
         self.out(f"----- messaggio {self.count} → {dest} (dry-run) -----\n{text}\n")
+        return self.count
 
 
 def _json_or_empty(resp: requests.Response) -> dict:

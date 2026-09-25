@@ -77,3 +77,12 @@ def test_set_my_commands():
     responses.post(url, json={"ok": True, "result": True})
     client().set_my_commands([("ultima", "Ultima partita")])
     assert b'"command": "ultima"' in responses.calls[0].request.body
+
+
+@responses.activate
+def test_send_returns_message_id_and_replies():
+    responses.post(URL, json={"ok": True, "result": {"message_id": 77}})
+    assert client().send_message("x", reply_to=5) == 77
+    body = responses.calls[0].request.body
+    assert b'"reply_parameters": {"message_id": 5, "allow_sending_without_reply": true}' in body
+    assert b'"link_preview_options": {"is_disabled": true}' in body
