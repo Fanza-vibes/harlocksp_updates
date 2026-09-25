@@ -1,5 +1,7 @@
 # harlocksp_updates
 
+[![Test](https://github.com/Fanza-vibes/harlocksp_updates/actions/workflows/tests.yml/badge.svg)](https://github.com/Fanza-vibes/harlocksp_updates/actions/workflows/tests.yml)
+
 Aggiornamenti del maestro HarlockSP: un bot che pubblica su un canale Telegram un messaggio
 per ogni nuova partita Dota 2 di **HarlockSP**
 ([Dotabuff](https://www.dotabuff.com/players/295689331) · account ID `295689331`).
@@ -119,6 +121,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 
 python -m pytest                          # test (nessuna chiamata di rete)
+ruff check src tests && ruff format src tests   # lint e formattazione (come nel CI)
 python -m src.main --dry-run --last 3     # stampa i messaggi delle ultime 3 partite
 python -m src.main --dry-run --comando "/riepilogo settimana"   # prova un comando
 ```
