@@ -110,6 +110,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # urllib3 a livello DEBUG logga il percorso delle richieste, che per Telegram contiene il token
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
     args = parse_args(argv)
     try:
         config = load_config(args.config, require_secrets=not args.dry_run)

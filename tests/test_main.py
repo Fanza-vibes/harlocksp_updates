@@ -130,3 +130,16 @@ def test_dry_run_never_writes(state_path):
     assert len(sender.sent) == 2
     with pytest.raises(FileNotFoundError):
         open(state_path)
+
+
+def test_main_silences_urllib3_debug(tmp_path, monkeypatch):
+    import logging
+
+    from src import main as main_mod
+
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("player_id: 1\n")
+    monkeypatch.setattr(main_mod, "run", lambda *a, **k: 0)
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)
+    assert main_mod.main(["--dry-run", "--config", str(cfg), "--state", str(tmp_path / "s.json")]) == 0
+    assert logging.getLogger("urllib3").getEffectiveLevel() >= logging.WARNING
