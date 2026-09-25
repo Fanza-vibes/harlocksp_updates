@@ -57,7 +57,7 @@ class Summary:
     wins: int
     avg_kda: tuple[float, float, float]
     total_seconds: int
-    top_heroes: list[tuple[int, int, int]] = field(default_factory=list)  # (hero_id, partite, vittorie)
+    top_heroes: list[tuple[int | None, int, int]] = field(default_factory=list)  # (eroe, partite, vittorie)
     best: Match | None = None
 
     @property

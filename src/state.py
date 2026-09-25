@@ -72,9 +72,7 @@ def _parse(data: Any, path: Path) -> State:
                 continue
     updated = data.get("heroes_updated_at")
     summary_date = data.get("last_summary_date")
-    try:
-        date.fromisoformat(summary_date)
-    except (TypeError, ValueError):
+    if not _is_iso_date(summary_date):
         summary_date = None
     return State(
         last_match_id=last,
@@ -84,6 +82,16 @@ def _parse(data: Any, path: Path) -> State:
         last_summary_date=summary_date,
         commands_version=_positive_int(data, "commands_version", path),
     )
+
+
+def _is_iso_date(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
 
 
 def _positive_int(data: dict, key: str, path: Path) -> int | None:
@@ -99,7 +107,7 @@ def _positive_int(data: dict, key: str, path: Path) -> int | None:
 def save_state(path: str | Path, state: State) -> None:
     """Scrittura atomica: file temporaneo nella stessa cartella + os.replace."""
     path = Path(path)
-    text = json.dumps(state.to_dict(), indent=2, ensure_ascii=False, sort_keys=True) + "\n"
+    text = json.dumps(state.to_dict(), indent=2, ensure_ascii=False) + "\n"
     fd, tmp = tempfile.mkstemp(dir=path.parent or ".", prefix=".state-", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
