@@ -81,7 +81,7 @@ def help_text(display_name: str) -> str:
         "• /riepilogo settimana – ultimi 7 giorni",
         "• /riepilogo mese – ultimi 30 giorni",
         "",
-        "⏳ Non sono sempre online: leggo i messaggi ogni 15 minuti circa, "
+        "⏳ Non sono sempre online: leggo i messaggi ogni 5-10 minuti circa, "
         "quindi la risposta può arrivare con qualche minuto di ritardo.",
         "",
         "Gli aggiornamenti di ogni partita e il riepilogo delle 23 arrivano nel canale.",

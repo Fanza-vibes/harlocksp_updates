@@ -2,7 +2,7 @@ name: Controllo partite
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # UTC; GitHub può ritardare l'avvio di qualche minuto
+    - cron: "*/5 * * * *" # minimo consentito da GitHub; può ritardare di qualche minuto
   workflow_dispatch:
 
 # Un solo giro alla volta: evita invii doppi e conflitti su state.json
