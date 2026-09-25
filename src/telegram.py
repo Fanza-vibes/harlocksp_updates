@@ -20,7 +20,7 @@ class TelegramError(Exception):
 
 
 class Sender(Protocol):
-    def send_message(self, text: str) -> None: ...
+    def send_message(self, text: str, chat_id: str | int | None = None) -> None: ...
 
 
 class TelegramClient:
@@ -43,14 +43,28 @@ class TelegramClient:
     def __repr__(self) -> str:
         return f"TelegramClient(chat_id={self.chat_id!r})"
 
-    def send_message(self, text: str) -> None:
+    def send_message(self, text: str, chat_id: str | int | None = None) -> None:
+        """Invia al canale, oppure a `chat_id` (risposte ai comandi in privato)."""
         payload = {
-            "chat_id": self.chat_id,
+            "chat_id": self.chat_id if chat_id is None else chat_id,
             "text": text,
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
         }
         self._call("sendMessage", payload)
+
+    def get_updates(self, offset: int | None, limit: int = 50) -> list[dict]:
+        """Messaggi arrivati al bot. Con timeout=0 non resta in attesa (polling breve)."""
+        payload: dict = {"timeout": 0, "limit": limit, "allowed_updates": ["message"]}
+        if offset is not None:
+            payload["offset"] = offset
+        result = self._call("getUpdates", payload).get("result")
+        return [u for u in result if isinstance(u, dict)] if isinstance(result, list) else []
+
+    def set_my_commands(self, commands: list[tuple[str, str]]) -> None:
+        """Il menu "/" che gli utenti vedono nella chat con il bot."""
+        payload = {"commands": [{"command": c, "description": d} for c, d in commands]}
+        self._call("setMyCommands", payload)
 
     def _call(self, method: str, payload: dict) -> dict:
         url = f"{self.api_url}/bot{self._token}/{method}"
@@ -88,9 +102,10 @@ class DryRunSender:
         self.out = out
         self.count = 0
 
-    def send_message(self, text: str) -> None:
+    def send_message(self, text: str, chat_id: str | int | None = None) -> None:
         self.count += 1
-        self.out(f"----- messaggio {self.count} (dry-run) -----\n{text}\n")
+        dest = "canale" if chat_id is None else f"chat {chat_id}"
+        self.out(f"----- messaggio {self.count} → {dest} (dry-run) -----\n{text}\n")
 
 
 def _json_or_empty(resp: requests.Response) -> dict:

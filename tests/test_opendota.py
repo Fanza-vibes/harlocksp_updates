@@ -54,3 +54,10 @@ def test_bad_json():
 def test_heroes():
     responses.get(f"{BASE_URL}/heroes", json=[{"id": 1, "localized_name": "Anti-Mage"}, {"id": 2}])
     assert client().heroes() == {1: "Anti-Mage", 2: "Hero 2"}
+
+
+@responses.activate
+def test_player_matches():
+    responses.get(f"{BASE_URL}/players/1/matches?date=7", json=[{"match_id": 1}, {"x": 2}])
+    assert client().player_matches(1, 7) == [{"match_id": 1}]
+    assert responses.calls[0].request.url.endswith("/players/1/matches?date=7")

@@ -41,6 +41,13 @@ class OpenDotaClient:
             raise OpenDotaError("recentMatches: risposta inattesa (non è una lista)")
         return [m for m in data if isinstance(m, dict) and isinstance(m.get("match_id"), int)]
 
+    def player_matches(self, player_id: int, days: int) -> list[dict[str, Any]]:
+        """Partite degli ultimi `days` giorni (una sola chiamata, anche per un mese)."""
+        data = self._get(f"/players/{player_id}/matches?date={int(days)}")
+        if not isinstance(data, list):
+            raise OpenDotaError("matches: risposta inattesa (non è una lista)")
+        return [m for m in data if isinstance(m, dict) and isinstance(m.get("match_id"), int)]
+
     def heroes(self) -> dict[int, str]:
         data = self._get("/heroes")
         if not isinstance(data, list):

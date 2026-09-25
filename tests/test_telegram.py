@@ -53,3 +53,27 @@ def test_dry_run_sender():
     s = DryRunSender(out=out.append)
     s.send_message("ciao")
     assert s.count == 1 and "ciao" in out[0]
+
+
+@responses.activate
+def test_send_to_specific_chat():
+    responses.post(URL, json={"ok": True})
+    client().send_message("x", chat_id=42)
+    assert b'"chat_id": 42' in responses.calls[0].request.body
+
+
+@responses.activate
+def test_get_updates():
+    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+    responses.post(url, json={"ok": True, "result": [{"update_id": 5}, "junk"]})
+    assert client().get_updates(offset=5) == [{"update_id": 5}]
+    body = responses.calls[0].request.body
+    assert b'"offset": 5' in body and b'"timeout": 0' in body and b'"allowed_updates": ["message"]' in body
+
+
+@responses.activate
+def test_set_my_commands():
+    url = f"https://api.telegram.org/bot{TOKEN}/setMyCommands"
+    responses.post(url, json={"ok": True, "result": True})
+    client().set_my_commands([("ultima", "Ultima partita")])
+    assert b'"command": "ultima"' in responses.calls[0].request.body
