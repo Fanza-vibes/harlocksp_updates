@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 
@@ -19,6 +20,8 @@ class Config:
     player_id: int
     display_name: str
     language: str = "it"
+    timezone: str = "Europe/Rome"
+    daily_summary_hour: int | None = 23  # None = riepilogo giornaliero disattivato
     telegram_token: str | None = field(default=None, repr=False)
     telegram_chat_id: str | None = None
 
@@ -26,7 +29,8 @@ class Config:
         token = "***" if self.telegram_token else None
         return (
             f"Config(player_id={self.player_id}, display_name={self.display_name!r}, "
-            f"language={self.language!r}, telegram_token={token}, "
+            f"language={self.language!r}, timezone={self.timezone!r}, "
+            f"daily_summary_hour={self.daily_summary_hour!r}, telegram_token={token}, "
             f"telegram_chat_id={self.telegram_chat_id!r})"
         )
 
@@ -54,10 +58,22 @@ def load_config(
         if missing:
             raise ConfigError("Variabili d'ambiente mancanti: " + ", ".join(missing))
 
+    timezone = str(data.get("timezone") or "Europe/Rome")
+    try:
+        ZoneInfo(timezone)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ConfigError(f"{path}: fuso orario sconosciuto: {timezone!r}") from exc
+
+    hour = data.get("daily_summary_hour", 23)
+    if hour is not None and (isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23):
+        raise ConfigError(f"{path}: 'daily_summary_hour' deve essere un'ora tra 0 e 23 oppure null")
+
     return Config(
         player_id=player_id,
         display_name=str(data.get("display_name") or player_id),
         language=str(data.get("language") or "it"),
+        timezone=timezone,
+        daily_summary_hour=hour,
         telegram_token=token,
         telegram_chat_id=chat_id,
     )

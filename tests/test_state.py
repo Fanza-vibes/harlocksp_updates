@@ -45,3 +45,12 @@ def test_save_is_deterministic(tmp_path):
     first = p.read_text()
     save_state(p, State(last_match_id=1))
     assert p.read_text() == first
+
+
+def test_new_fields_roundtrip_and_validation(tmp_path):
+    p = tmp_path / "s.json"
+    s = State(last_match_id=1, telegram_offset=500, last_summary_date="2026-09-25", commands_version=1)
+    save_state(p, s)
+    assert load_state(p) == s
+    p.write_text(json.dumps({"telegram_offset": -3, "last_summary_date": "ieri", "commands_version": "1"}))
+    assert load_state(p) == State()

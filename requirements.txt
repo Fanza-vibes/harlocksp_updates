@@ -1,2 +1,3 @@
 requests>=2.31,<3
 PyYAML>=6.0,<7
+tzdata>=2024.1  # dati dei fusi orari anche dove il sistema non li ha (es. Windows)

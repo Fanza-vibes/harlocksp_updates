@@ -35,3 +35,20 @@ def test_invalid_player_id(tmp_path):
 def test_missing_file(tmp_path):
     with pytest.raises(ConfigError):
         load_config(tmp_path / "x.yaml", env={}, require_secrets=False)
+
+
+def test_defaults_timezone_and_hour(cfg_file):
+    c = load_config(cfg_file, env={}, require_secrets=False)
+    assert c.timezone == "Europe/Rome" and c.daily_summary_hour == 23
+
+
+@pytest.mark.parametrize("extra", ["timezone: Marte/Base\n", "daily_summary_hour: 24\n", "daily_summary_hour: sera\n"])
+def test_invalid_timezone_or_hour(cfg_file, extra):
+    cfg_file.write_text(cfg_file.read_text() + extra)
+    with pytest.raises(ConfigError):
+        load_config(cfg_file, env={}, require_secrets=False)
+
+
+def test_summary_can_be_disabled(cfg_file):
+    cfg_file.write_text(cfg_file.read_text() + "daily_summary_hour: null\n")
+    assert load_config(cfg_file, env={}, require_secrets=False).daily_summary_hour is None
