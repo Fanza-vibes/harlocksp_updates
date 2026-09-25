@@ -4,7 +4,7 @@ Aggiornamenti del maestro HarlockSP: un bot che pubblica su un canale Telegram u
 per ogni nuova partita Dota 2 di **HarlockSP**
 ([Dotabuff](https://www.dotabuff.com/players/295689331) · account ID `295689331`).
 
-**Costo zero**: gira su GitHub Actions ogni 15 minuti e usa l'API gratuita di
+**Costo zero**: gira su GitHub Actions ogni 5 minuti e usa l'API gratuita di
 [OpenDota](https://docs.opendota.com/). Non serve nessun server.
 
 Cosa fa:
@@ -37,7 +37,7 @@ Esempio di messaggio:
 | `/riepilogo settimana` | ultimi 7 giorni |
 | `/riepilogo mese` | ultimi 30 giorni |
 
-⏳ Il bot non ha un server sempre acceso: legge i messaggi a ogni giro (circa ogni 15 minuti),
+⏳ Il bot non ha un server sempre acceso: legge i messaggi a ogni giro (circa ogni 5-10 minuti),
 quindi la risposta può arrivare con qualche minuto di ritardo.
 
 Privacy: il bot non salva chi gli scrive (nessun ID o nome nel repository) e i log pubblici
@@ -93,16 +93,19 @@ I Secrets non sono mai visibili nei log. Non scriverli mai in un file del reposi
    - *Workflow permissions*: **Read and write permissions**. Serve al bot per salvare `state.json`.
 2. Il workflow pianificato parte **solo dal branch predefinito** (`main`): il codice deve essere su `main`.
 3. Tieni il repository **pubblico**: per i repository pubblici i minuti di Actions sono gratuiti e illimitati.
-   Su un repository privato un controllo ogni 15 minuti supererebbe i 2000 minuti gratuiti al mese.
+   Su un repository privato un controllo ogni 5 minuti supererebbe di molto i 2000 minuti gratuiti al mese.
 
 ### 6. Primo avvio manuale
 
 1. Vai in **Actions → Controllo partite → Run workflow**.
 2. Al primo avvio il bot **non invia nulla**: salva soltanto l'ultima partita in `state.json` (vedrai
    un commit `Aggiorna state.json`). Così il canale non viene inondato con lo storico.
-3. Da lì in poi, ogni 15 minuti circa, ogni nuova partita genera un messaggio.
+3. Da lì in poi ogni nuova partita genera un messaggio, di solito entro 5-15 minuti dalla fine.
 
-> Il cron di GitHub è in UTC e spesso parte con qualche minuto di ritardo: è normale.
+> Da dove viene il ritardo: il bot controlla ogni 5 minuti, ma GitHub avvia spesso i giri con
+> qualche minuto di ritardo (a volte di più nelle ore di punta) e OpenDota può metterci qualche
+> minuto a registrare una partita appena finita. Di solito il messaggio arriva 5-15 minuti dopo
+> la fine della partita.
 
 **Per provare subito un invio vero**: modifica `state.json` mettendo un `last_match_id` più basso
 dell'ultima partita (per esempio l'ID della penultima partita su Dotabuff), fai commit e lancia di nuovo il workflow.
@@ -159,7 +162,8 @@ Il menu dei comandi (il tasto "/" nella chat) viene impostato automaticamente da
 | `HTTP 403 – … not enough rights`             | il bot non è amministratore con permesso di pubblicare |
 | `OpenDota …: HTTP 5xx dopo 4 tentativi`      | OpenDota temporaneamente giù: si ritenta da solo al giro dopo |
 | push rifiutato (`403`) nello step "Salva state.json" | *Workflow permissions* non impostato su "Read and write" |
-| il bot non risponde ai comandi               | aspetta il giro successivo (fino a ~15-30 min); controlla che il workflow sia verde |
+| il bot non risponde ai comandi               | aspetta il giro successivo (di solito 5-15 min); in Actions controlla che ci siano avvii "schedule" verdi |
+| in Actions ci sono solo avvii manuali, nessuno "schedule" | su un repository nuovo GitHub può impiegare qualche ora ad attivare il cron: nel frattempo usa Run workflow |
 | `getUpdates … 409 Conflict`                  | al bot è collegato un webhook o un altro programma che legge i messaggi: va rimosso |
 | il workflow non parte più da solo            | GitHub disattiva i cron dopo 60 giorni senza attività: riattivalo da Actions |
 

@@ -1,12 +1,12 @@
 # CLAUDE.md
 
 Bot Telegram che pubblica le partite Dota 2 di HarlockSP (account 295689331).
-Costo zero: GitHub Actions (cron ogni 15 min) + API OpenDota senza chiave.
+Costo zero: GitHub Actions (cron ogni 5 min, il minimo di GitHub) + API OpenDota senza chiave.
 
 ## Architettura
 
 ```
-check.yml (cron 15 min) → python -m src.main — un giro:
+check.yml (cron 5 min) → python -m src.main — un giro:
   1. recentMatches (UNA chiamata) → nuove partite nel canale
   2. getUpdates → risposte ai comandi in chat privata
   3. dopo daily_summary_hour (Europe/Rome) → riepilogo del giorno nel canale
