@@ -1,0 +1,52 @@
+name: Controllo partite
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # UTC; GitHub può ritardare l'avvio di qualche minuto
+  workflow_dispatch:
+
+# Un solo giro alla volta: evita invii doppi e conflitti su state.json
+concurrency:
+  group: check-matches
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Controlla e invia
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m src.main
+
+      # Anche se un invio fallisce, salva il progresso fatto fin lì
+      - name: Salva state.json se cambiato
+        if: always()
+        run: |
+          if git diff --quiet -- state.json; then
+            echo "state.json invariato"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git commit -m "Aggiorna state.json [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
