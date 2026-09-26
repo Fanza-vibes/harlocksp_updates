@@ -13,6 +13,7 @@ def cfg_file(tmp_path):
 def test_load_with_secrets(cfg_file):
     c = load_config(cfg_file, env={"TELEGRAM_TOKEN": "123:SECRET", "TELEGRAM_CHAT_ID": "@canale"})
     assert c.player_id == 295689331 and c.display_name == "HarlockSP"
+    assert not hasattr(c, "language")
     assert "SECRET" not in repr(c) and "SECRET" not in str(c)
 
 
