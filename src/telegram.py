@@ -21,12 +21,21 @@ class TelegramError(Exception):
 
 
 class Sender(Protocol):
+    """Qualsiasi oggetto che sa inviare un messaggio: `TelegramClient` o `DryRunSender`."""
+
     def send_message(
         self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
     ) -> int | None: ...
 
 
 class TelegramClient:
+    """Client per la Bot API di Telegram.
+
+    `chat_id` è la destinazione predefinita (il canale). Gestisce il limite 429 aspettando
+    `retry_after` e ritenta sugli errori 5xx e di rete. Il token è privato: non compare mai in
+    `repr`, nei log o nei messaggi di errore.
+    """
+
     def __init__(
         self,
         token: str,
@@ -44,6 +53,7 @@ class TelegramClient:
         self.api_url = api_url
 
     def __repr__(self) -> str:
+        """Rappresentazione per i log, senza token."""
         return f"TelegramClient(chat_id={self.chat_id!r})"
 
     def send_message(

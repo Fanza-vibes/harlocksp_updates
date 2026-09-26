@@ -18,6 +18,11 @@ class ConfigError(Exception):
 
 @dataclass(frozen=True)
 class Config:
+    """Configurazione immutabile di un giro.
+
+    Le opzioni vengono da `config.yaml`, i segreti (token e chat ID) dalle variabili d'ambiente.
+    """
+
     player_id: int
     display_name: str
     timezone: str = "Europe/Rome"
@@ -26,6 +31,7 @@ class Config:
     telegram_chat_id: str | None = None
 
     def __repr__(self) -> str:  # il token non deve mai finire nei log
+        """Rappresentazione per i log con il token mascherato."""
         token = "***" if self.telegram_token else None
         return (
             f"Config(player_id={self.player_id}, display_name={self.display_name!r}, "

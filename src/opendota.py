@@ -21,6 +21,13 @@ class OpenDotaError(Exception):
 
 
 class OpenDotaClient:
+    """Client HTTP per l'API pubblica di OpenDota (senza chiave).
+
+    Ogni chiamata ha un timeout e fino a `retries` nuovi tentativi con attesa esponenziale sugli
+    errori temporanei (rete, 429, 5xx). Se non riesce solleva `OpenDotaError`.
+    Limiti gratuiti di OpenDota: circa 60 chiamate/minuto e 2000/giorno.
+    """
+
     def __init__(
         self,
         base_url: str = BASE_URL,
@@ -38,6 +45,7 @@ class OpenDotaClient:
         self._heroes_cache: list[dict[str, Any]] | None = None  # /heroes al massimo una volta per giro
 
     def recent_matches(self, player_id: int) -> list[dict[str, Any]]:
+        """Ultime 20 partite del giocatore (una sola chiamata, usata a ogni giro)."""
         data = self._get(f"/players/{player_id}/recentMatches")
         if not isinstance(data, list):
             raise OpenDotaError("recentMatches: risposta inattesa (non è una lista)")

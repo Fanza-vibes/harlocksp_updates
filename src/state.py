@@ -26,6 +26,7 @@ class Pending:
     requested: bool = False  # analisi già chiesta a OpenDota
 
     def to_dict(self) -> dict[str, Any]:
+        """Forma JSON della voce, con i campi sempre nello stesso ordine."""
         return {
             "match_id": self.match_id,
             "message_id": self.message_id,
@@ -36,6 +37,11 @@ class Pending:
 
 @dataclass
 class State:
+    """Tutto ciò che il bot ricorda tra un giro e l'altro (salvato in `state.json`).
+
+    Contiene solo dati pubblici o numerici: il repository è pubblico, quindi niente dati personali.
+    """
+
     last_match_id: int | None = None
     heroes: dict[int, str] = field(default_factory=dict)
     heroes_updated_at: str | None = None
@@ -45,9 +51,11 @@ class State:
     pending_trivia: list[Pending] = field(default_factory=list)
 
     def add_pending(self, item: Pending) -> None:
+        """Accoda una partita per le curiosità, tenendo solo le ultime MAX_PENDING."""
         self.pending_trivia = [*self.pending_trivia, item][-MAX_PENDING:]
 
     def to_dict(self) -> dict[str, Any]:
+        """Forma JSON dello stato: ordine dei campi fisso e campi vuoti omessi, per diff minimi."""
         data: dict[str, Any] = {}
         if self.last_match_id is not None:
             data["last_match_id"] = self.last_match_id
@@ -65,6 +73,7 @@ class State:
 
 
 def load_state(path: str | Path) -> State:
+    """Legge `state.json`. File mancante, vuoto o corrotto = stato vuoto (primo avvio), mai un errore."""
     path = Path(path)
     try:
         raw = path.read_text(encoding="utf-8")

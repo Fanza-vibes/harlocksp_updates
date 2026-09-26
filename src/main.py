@@ -49,6 +49,12 @@ def select_new_matches(matches: list[dict], last_match_id: int) -> list[dict]:
 def notify_new_matches(
     state: State, data: MatchData, sender: Sender, config: Config, save, dry_run: bool, last: int
 ) -> int:
+    """Pubblica nel canale le partite nuove, in ordine cronologico.
+
+    Al primo avvio salva solo l'ultima partita senza inviare nulla. Lo stato viene salvato dopo ogni
+    invio riuscito, così un errore a metà non provoca doppioni. Ogni scheda inviata entra nella coda
+    delle curiosità. Restituisce EXIT_SEND_FAILED se Telegram rifiuta un invio.
+    """
     if not data.recent:
         log.info("Nessuna partita restituita da OpenDota")
         return EXIT_OK
@@ -136,6 +142,12 @@ def run(
     trivia_match: int | None = None,
     now: datetime | None = None,
 ) -> int:
+    """Esegue un giro completo del bot e restituisce l'exit code.
+
+    Ordine: nuove partite → curiosità → comandi privati → riepilogo giornaliero. Se OpenDota non
+    risponde il giro termina subito senza toccare lo stato (exit 0: si riprova al giro dopo).
+    Con `command` o `trivia_match` esegue solo quella prova (usati da --comando e --partita).
+    """
     now = now or datetime.now(ZoneInfo(config.timezone))
     state = load_state(state_path)
 
@@ -172,6 +184,7 @@ def run(
 
 
 def preview_trivia(match_id: int, client: TriviaAPI, sender: Sender, config: Config, data: MatchData) -> int:
+    """Stampa le curiosità di una partita qualsiasi (opzione --partita del dry-run)."""
     try:
         match = client.match(match_id)
     except OpenDotaError as exc:
@@ -185,6 +198,7 @@ def preview_trivia(match_id: int, client: TriviaAPI, sender: Sender, config: Con
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Argomenti da riga di comando. --comando e --partita richiedono --dry-run."""
     p = argparse.ArgumentParser(description="Aggiornamenti Dota 2 su Telegram")
     p.add_argument("--dry-run", action="store_true", help="stampa i messaggi, non invia e non salva")
     p.add_argument("--last", type=int, default=0, help="con --dry-run: mostra le ultime N partite")
@@ -199,6 +213,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Entrypoint: configura il logging, legge config e segreti, sceglie il mittente ed esegue un giro."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     # urllib3 a livello DEBUG logga il percorso delle richieste, che per Telegram contiene il token
     logging.getLogger("urllib3").setLevel(logging.WARNING)
