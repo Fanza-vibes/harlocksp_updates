@@ -16,6 +16,8 @@ Progetto per divertimento, senza scopo commerciale e a costo zero.
   rimonte, confronti con gli altri giocatori dello stesso eroe.
 - 📊 **Riepilogo della giornata** alle 23, nei giorni in cui ha giocato.
 - 💬 **Comandi in chat privata** con il bot, per chiedere un riepilogo quando si vuole.
+- 🖼 **Immagini e GIF** a scelta, allegate ai messaggi del canale (vittoria, sconfitta, serie di
+  fila, giocate speciali, riepilogo): si caricano nelle cartelle di [`media/`](media/LEGGIMI.md).
 
 Esempi:
 
@@ -87,6 +89,7 @@ Struttura del codice (`src/`):
 | `commands.py` | comandi in chat privata |
 | `followup.py` | invio delle curiosità quando il replay è stato analizzato |
 | `data.py` | recupero dei dati delle partite con cache |
+| `media.py` | scelta e invio di immagini e GIF da `media/` |
 | `opendota.py`, `telegram.py` | client delle API esterne |
 | `state.py`, `config.py` | stato tra un giro e l'altro e configurazione |
 

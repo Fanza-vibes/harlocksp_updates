@@ -39,7 +39,7 @@ class FakeSender:
         self.sent = []
         self.fail_on = fail_on
 
-    def send_message(self, text):
+    def send_message(self, text, chat_id=None, reply_to=None):
         if self.fail_on is not None and len(self.sent) == self.fail_on:
             raise TelegramError("boom")
         self.sent.append(text)
@@ -239,7 +239,7 @@ class FakeBot(FakeSender):
         self.private = []
         self.commands = None
 
-    def send_message(self, text, chat_id=None):
+    def send_message(self, text, chat_id=None, reply_to=None):
         if chat_id is None:
             super().send_message(text)
         else:
@@ -363,3 +363,39 @@ def test_dry_run_does_not_touch_trivia_queue(tmp_path):
     from src.telegram import DryRunSender
 
     assert run(CONFIG, state_path, OD([make_match(10)]), DryRunSender(), dry_run=True, now=NOW_NOON) == 0
+
+
+# --- immagini e GIF ---------------------------------------------------------
+
+
+class MediaSender(FakeSender):
+    def __init__(self):
+        super().__init__()
+        self.media = []
+
+    def send_media(self, path, caption, reply_to=None):
+        self.media.append((path.parent.name, path.name))
+        self.sent.append(caption)
+        return 500 + len(self.sent)
+
+
+def test_match_card_uses_media_folder(state_path, empty_media_dir):
+    (empty_media_dir / "serie_sconfitte").mkdir()
+    (empty_media_dir / "serie_sconfitte" / "piangere.gif").write_bytes(b"x")
+    save_state(state_path, State(last_match_id=12, last_summary_date="2026-09-24"))
+    ms = [make_match(i, radiant_win=False, start_time=1000 * i) for i in (10, 11, 12, 13)]
+    sender = MediaSender()
+    run(CONFIG, state_path, FakeOpenDotaTrivia(ms), sender, now=NOW_NOON)
+    assert sender.media == [("serie_sconfitte", "piangere.gif")]
+    assert load_state(state_path).pending_trivia[0].message_id == 501  # curiosità in risposta al file
+    assert "4 SCONFITTE DI FILA" in sender.sent[0]  # la scheda diventa la didascalia
+
+
+def test_daily_summary_uses_media_folder(state_path, empty_media_dir):
+    (empty_media_dir / "riepilogo").mkdir()
+    (empty_media_dir / "riepilogo" / "sera.png").write_bytes(b"x")
+    save_state(state_path, State(last_match_id=11, last_summary_date="2026-09-24"))
+    ms = [make_match(11, start_time=ts(2026, 9, 25, 15))]
+    sender = MediaSender()
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 25, 23, 5, tzinfo=ROME))
+    assert sender.media == [("riepilogo", "sera.png")]

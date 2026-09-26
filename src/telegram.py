@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Protocol
 
 import requests
@@ -13,6 +15,7 @@ log = logging.getLogger(__name__)
 
 API_URL = "https://api.telegram.org"
 TIMEOUT = (10, 20)
+UPLOAD_TIMEOUT = (10, 60)  # i file (GIF fino a 50 MB) richiedono più tempo
 MAX_RETRY_AFTER = 60  # oltre questa attesa rinunciamo e riproviamo al giro dopo
 
 
@@ -26,6 +29,8 @@ class Sender(Protocol):
     def send_message(
         self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
     ) -> int | None: ...
+
+    def send_media(self, path: Path, caption: str, reply_to: int | None = None) -> int | None: ...
 
 
 class TelegramClient:
@@ -75,6 +80,19 @@ class TelegramClient:
         message_id = self._call("sendMessage", payload).get("result", {}).get("message_id")
         return message_id if isinstance(message_id, int) else None
 
+    def send_media(self, path: Path, caption: str, reply_to: int | None = None) -> int | None:
+        """Invia al canale un'immagine (sendPhoto) o una GIF/video (sendAnimation) con didascalia HTML."""
+        animation = path.suffix.lower() in {".gif", ".mp4"}
+        method, field = ("sendAnimation", "animation") if animation else ("sendPhoto", "photo")
+        form: dict = {"chat_id": self.chat_id, "caption": caption, "parse_mode": "HTML"}
+        if reply_to is not None:
+            reply = {"message_id": reply_to, "allow_sending_without_reply": True}
+            form["reply_parameters"] = json.dumps(reply)
+        with path.open("rb") as fh:
+            body = self._call(method, form, files={field: (path.name, fh)})
+        message_id = body.get("result", {}).get("message_id")
+        return message_id if isinstance(message_id, int) else None
+
     def get_updates(self, offset: int | None, limit: int = 50) -> list[dict]:
         """Messaggi arrivati al bot. Con timeout=0 non resta in attesa (polling breve)."""
         payload: dict = {"timeout": 0, "limit": limit, "allowed_updates": ["message"]}
@@ -88,11 +106,18 @@ class TelegramClient:
         payload = {"commands": [{"command": c, "description": d} for c, d in commands]}
         self._call("setMyCommands", payload)
 
-    def _call(self, method: str, payload: dict) -> dict:
+    def _call(self, method: str, payload: dict, files: dict | None = None) -> dict:
+        """Chiamata alla Bot API con retry. Con `files` invia un form multipart (caricamento di file)."""
         url = f"{self.api_url}/bot{self._token}/{method}"
         for attempt in range(self.retries + 1):
+            if files:
+                for _, fh in files.values():
+                    fh.seek(0)  # a ogni tentativo il file va riletto dall'inizio
             try:
-                resp = self.session.post(url, json=payload, timeout=TIMEOUT)
+                if files:
+                    resp = self.session.post(url, data=payload, files=files, timeout=UPLOAD_TIMEOUT)
+                else:
+                    resp = self.session.post(url, json=payload, timeout=TIMEOUT)
             except requests.RequestException as exc:
                 # non includere exc: il messaggio contiene l'URL con il token
                 if attempt < self.retries:
@@ -133,6 +158,11 @@ class DryRunSender:
             dest += f", in risposta al messaggio {reply_to}"
         self.out(f"----- messaggio {self.count} → {dest} (dry-run) -----\n{text}\n")
         return self.count
+
+    def send_media(self, path: Path, caption: str, reply_to: int | None = None) -> int | None:
+        """Stampa la didascalia indicando il file che verrebbe allegato."""
+        self.out(f"[allegato: {path}]")
+        return self.send_message(caption, reply_to=reply_to)
 
 
 def _json_or_empty(resp: requests.Response) -> dict:

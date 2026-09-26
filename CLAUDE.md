@@ -18,11 +18,14 @@ check.yml (cron 5 min) → python -m src.main — un giro:
   trivia.py    funzioni pure: curiosità con punteggio da una partita analizzata, top 5
   data.py      MatchData: dati OpenDota del giro con cache; usa le recenti se bastano,
                altrimenti /players/{id}/matches?date=N; cache eroi aggiornata ogni 7 giorni
+  media.py     immagini/GIF da media/<cartella>: scelta casuale, dalla cartella più specifica alla
+               generica; ripiego sul solo testo se manca il file, se fallisce o se il testo > 1024
   commands.py  parsing comandi, risposte, limite per chat, menu setMyCommands
   stats.py     funzioni pure: vittoria, KDA, streak, summarize, finestre temporali
   formatter.py funzioni pure per il testo (HTML con escape), nomi modalità in italiano
   opendota.py  client HTTP con timeout e retry/backoff (429/5xx/rete) → OpenDotaError
-  telegram.py  sendMessage/getUpdates/setMyCommands, gestione 429 → TelegramError; DryRunSender
+  telegram.py  sendMessage/sendPhoto/sendAnimation (multipart)/getUpdates/setMyCommands, gestione
+               429 → TelegramError; DryRunSender
   state.py     state.json: last_match_id, cache eroi, telegram_offset, last_summary_date,
                commands_version, pending_trivia; lettura tollerante, scrittura atomica
   config.py    config.yaml + TELEGRAM_TOKEN / TELEGRAM_CHAT_ID da env
@@ -46,6 +49,8 @@ Regole di comportamento:
   analizzata ⇔ `version` non nullo; campo mancante = curiosità saltata, mai un errore. Solo nomi di
   eroi (killed_by/killed usano chiavi "npc_dota_hero_*"), mai nickname o chat. Fixture in
   tests/fixtures_match.py.
+- Media: solo messaggi del canale (scheda, curiosità con ULTRA KILL/RAMPAGE, riepilogo), mai le
+  risposte private. I test non leggono mai media/ reale (fixture autouse `empty_media_dir`).
 - **Privacy**: il repo e i log di Actions sono pubblici → mai salvare o loggare chat ID, nomi o testi
   degli utenti (solo conteggi).
 
