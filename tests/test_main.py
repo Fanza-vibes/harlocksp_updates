@@ -348,3 +348,18 @@ def test_channel_message_curse_broken(state_path):
     sender = FakeSender()
     run(CONFIG, state_path, FakeOpenDota(ms), sender, now=NOW_NOON)
     assert "IL MAESTRO HA VINTO!" in sender.sent[0] and "Maledizione spezzata" in sender.sent[0]
+
+
+def test_dry_run_does_not_touch_trivia_queue(tmp_path):
+    from src.state import Pending
+
+    state_path = str(tmp_path / "state.json")
+    save_state(state_path, State(last_match_id=10, pending_trivia=[Pending(10, 5, 1_790_000_000)]))
+
+    class OD(FakeOpenDotaTrivia):
+        def match(self, match_id):
+            raise AssertionError("in dry-run non si interroga la coda delle curiosità")
+
+    from src.telegram import DryRunSender
+
+    assert run(CONFIG, state_path, OD([make_match(10)]), DryRunSender(), dry_run=True, now=NOW_NOON) == 0

@@ -159,8 +159,9 @@ def run(
     rc = notify_new_matches(state, data, sender, config, save, dry_run, last)
     if rc != EXIT_OK:
         return rc
-    send_pending_trivia(state, client, sender, config.player_id, data, now)
-    save()
+    if not dry_run:  # la coda delle curiosità chiede analisi a OpenDota: niente effetti in prova
+        send_pending_trivia(state, client, sender, config.player_id, data, now)
+        save()
     if bot is not None:
         ensure_bot_commands(bot, state)
         process_updates(bot, state, data, config.display_name, now)
