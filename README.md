@@ -1,5 +1,7 @@
 # harlocksp_updates
 
+[![Test](https://github.com/Fanza-vibes/harlocksp_updates/actions/workflows/tests.yml/badge.svg)](https://github.com/Fanza-vibes/harlocksp_updates/actions/workflows/tests.yml)
+
 Aggiornamenti del maestro HarlockSP: un bot che pubblica su un canale Telegram un messaggio
 per ogni nuova partita Dota 2 di **HarlockSP**
 ([Dotabuff](https://www.dotabuff.com/players/295689331) · account ID `295689331`).
@@ -10,6 +12,10 @@ per ogni nuova partita Dota 2 di **HarlockSP**
 Cosa fa:
 - 📣 **nel canale**: un messaggio per ogni nuova partita (con 🌟 per le partite notevoli e le serie
   di vittorie/sconfitte) e, alle 23, il **riepilogo della giornata** se HarlockSP ha giocato;
+- 🔍 **curiosità**: quando OpenDota ha analizzato il replay (di solito 5-30 minuti dopo), arriva in
+  risposta alla scheda un secondo messaggio con le chicche della partita: nemesi, vittima preferita,
+  multi-kill e rampage, serie di kill, first blood, rimonte o throw, confronti con gli altri giocatori
+  dello stesso eroe, % dei danni della squadra, tempo passato da morto (al massimo 5, le più notevoli);
 - 💬 **in chat privata con il bot**: chiunque può chiedere `/ultima` o `/riepilogo oggi|settimana|mese`.
 
 Esempio di messaggio:
@@ -39,6 +45,8 @@ Esempio di messaggio:
 
 ⏳ Il bot non ha un server sempre acceso: legge i messaggi a ogni giro (circa ogni 5-10 minuti),
 quindi la risposta può arrivare con qualche minuto di ritardo.
+
+Nelle curiosità compaiono solo i nomi degli eroi, mai i nickname degli altri giocatori né la chat.
 
 Privacy: il bot non salva chi gli scrive (nessun ID o nome nel repository) e i log pubblici
 di GitHub riportano solo quante risposte sono state inviate. Risponde a massimo 3 comandi
@@ -119,8 +127,10 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 
 python -m pytest                          # test (nessuna chiamata di rete)
+ruff check src tests && ruff format src tests   # lint e formattazione (come nel CI)
 python -m src.main --dry-run --last 3     # stampa i messaggi delle ultime 3 partite
 python -m src.main --dry-run --comando "/riepilogo settimana"   # prova un comando
+python -m src.main --dry-run --partita 9015942434               # curiosità di una partita
 ```
 
 `--dry-run` stampa i messaggi invece di inviarli, **non modifica** `state.json` e non richiede i
@@ -165,6 +175,7 @@ Il menu dei comandi (il tasto "/" nella chat) viene impostato automaticamente da
 | il bot non risponde ai comandi               | aspetta il giro successivo (di solito 5-15 min); in Actions controlla che ci siano avvii "schedule" verdi |
 | in Actions ci sono solo avvii manuali, nessuno "schedule" | su un repository nuovo GitHub può impiegare qualche ora ad attivare il cron: nel frattempo usa Run workflow |
 | `getUpdates … 409 Conflict`                  | al bot è collegato un webhook o un altro programma che legge i messaggi: va rimosso |
+| le curiosità di una partita non arrivano     | OpenDota non è riuscito ad analizzare il replay (capita): dopo 3 ore il bot rinuncia |
 | il workflow non parte più da solo            | GitHub disattiva i cron dopo 60 giorni senza attività: riattivalo da Actions |
 
 Nota: se una partita non ha ancora i dati completi o il profilo Dota è privato

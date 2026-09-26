@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import requests
 
@@ -34,6 +35,7 @@ class OpenDotaClient:
         self.retries = retries
         self.backoff = backoff
         self.sleep = sleep
+        self._heroes_cache: list[dict[str, Any]] | None = None  # /heroes al massimo una volta per giro
 
     def recent_matches(self, player_id: int) -> list[dict[str, Any]]:
         data = self._get(f"/players/{player_id}/recentMatches")
@@ -49,16 +51,38 @@ class OpenDotaClient:
         return [m for m in data if isinstance(m, dict) and isinstance(m.get("match_id"), int)]
 
     def heroes(self) -> dict[int, str]:
-        data = self._get("/heroes")
-        if not isinstance(data, list):
-            raise OpenDotaError("heroes: risposta inattesa (non è una lista)")
+        """{hero_id: nome visualizzato}."""
         return {
-            h["id"]: h.get("localized_name") or h.get("name") or f"Hero {h['id']}"
-            for h in data
-            if isinstance(h, dict) and isinstance(h.get("id"), int)
+            h["id"]: h.get("localized_name") or h.get("name") or f"Hero {h['id']}" for h in self._heroes()
         }
 
+    def hero_keys(self) -> dict[str, str]:
+        """{'npc_dota_hero_pudge': 'Pudge'}: i nomi interni usati da killed/killed_by."""
+        return {h["name"]: h.get("localized_name") or h["name"] for h in self._heroes() if h.get("name")}
+
+    def match(self, match_id: int) -> dict[str, Any]:
+        """Dettaglio di una partita. I dati avanzati ci sono solo se il replay è stato analizzato."""
+        data = self._request("GET", f"/matches/{int(match_id)}")
+        if not isinstance(data, dict) or not isinstance(data.get("players"), list):
+            raise OpenDotaError("matches: risposta inattesa")
+        return data
+
+    def request_parse(self, match_id: int) -> None:
+        """Chiede a OpenDota di analizzare il replay (gratis; vale 10 chiamate nel limite)."""
+        self._request("POST", f"/request/{int(match_id)}")
+
+    def _heroes(self) -> list[dict[str, Any]]:
+        if self._heroes_cache is None:
+            data = self._request("GET", "/heroes")
+            if not isinstance(data, list):
+                raise OpenDotaError("heroes: risposta inattesa (non è una lista)")
+            self._heroes_cache = [h for h in data if isinstance(h, dict) and isinstance(h.get("id"), int)]
+        return self._heroes_cache
+
     def _get(self, path: str) -> Any:
+        return self._request("GET", path)
+
+    def _request(self, method: str, path: str) -> Any:
         url = self.base_url + path
         last_error = "errore sconosciuto"
         for attempt in range(self.retries + 1):
@@ -67,7 +91,7 @@ class OpenDotaClient:
                 log.info("OpenDota %s: nuovo tentativo tra %.0fs (%s)", path, delay, last_error)
                 self.sleep(delay)
             try:
-                resp = self.session.get(url, timeout=TIMEOUT)
+                resp = self.session.request(method, url, timeout=TIMEOUT)
             except requests.RequestException as exc:
                 last_error = f"errore di rete: {type(exc).__name__}"
                 continue

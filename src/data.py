@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from .opendota import OpenDotaError
@@ -24,9 +24,15 @@ class OpenDotaAPI(Protocol):
 
 
 class MatchData:
-    def __init__(self, client: OpenDotaAPI, player_id: int, recent: list[Match], state: State,
-                 now: datetime | None = None) -> None:
-        self.now = now or datetime.now(timezone.utc)
+    def __init__(
+        self,
+        client: OpenDotaAPI,
+        player_id: int,
+        recent: list[Match],
+        state: State,
+        now: datetime | None = None,
+    ) -> None:
+        self.now = now or datetime.now(UTC)
         self.client = client
         self.player_id = player_id
         self.recent = chronological(recent)
@@ -35,7 +41,7 @@ class MatchData:
         self._heroes_checked = False
 
     def between(self, start: datetime, end: datetime) -> list[Match]:
-        """Partite iniziate in [start, end). Usa le recenti se bastano, altrimenti una chiamata in più.
+        """Partite terminate in [start, end). Usa le recenti se bastano, altrimenti una chiamata in più.
 
         Può sollevare OpenDotaError.
         """
@@ -63,7 +69,7 @@ class MatchData:
             self._heroes_checked = True  # al massimo un tentativo per giro
             try:
                 self.state.heroes = self.client.heroes()
-                self.state.heroes_updated_at = self.now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                self.state.heroes_updated_at = self.now.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
             except OpenDotaError as exc:
                 log.warning("Impossibile aggiornare gli eroi (%s): uso i nomi di riserva", exc)
         return self.state.heroes
@@ -78,4 +84,4 @@ class MatchData:
             updated = datetime.strptime(self.state.heroes_updated_at, "%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             return True
-        return self.now - updated.replace(tzinfo=timezone.utc) > HEROES_MAX_AGE
+        return self.now - updated.replace(tzinfo=UTC) > HEROES_MAX_AGE

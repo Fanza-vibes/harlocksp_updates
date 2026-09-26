@@ -61,3 +61,31 @@ def test_player_matches():
     responses.get(f"{BASE_URL}/players/1/matches?date=7", json=[{"match_id": 1}, {"x": 2}])
     assert client().player_matches(1, 7) == [{"match_id": 1}]
     assert responses.calls[0].request.url.endswith("/players/1/matches?date=7")
+
+
+@responses.activate
+def test_match_and_request_parse():
+    responses.get(f"{BASE_URL}/matches/9", json={"match_id": 9, "players": []})
+    responses.post(f"{BASE_URL}/request/9", json={"job": {"jobId": 1}})
+    c = client()
+    assert c.match(9)["match_id"] == 9
+    c.request_parse(9)
+    assert responses.calls[1].request.method == "POST"
+
+
+@responses.activate
+def test_match_bad_payload():
+    responses.get(f"{BASE_URL}/matches/9", json={"error": "not found"})
+    with pytest.raises(OpenDotaError):
+        client().match(9)
+
+
+@responses.activate
+def test_heroes_fetched_once_for_both_maps():
+    responses.get(
+        f"{BASE_URL}/heroes", json=[{"id": 14, "name": "npc_dota_hero_pudge", "localized_name": "Pudge"}]
+    )
+    c = client()
+    assert c.heroes() == {14: "Pudge"}
+    assert c.hero_keys() == {"npc_dota_hero_pudge": "Pudge"}
+    assert len(responses.calls) == 1

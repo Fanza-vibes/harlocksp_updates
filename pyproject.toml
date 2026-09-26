@@ -1,0 +1,23 @@
+[project]
+name = "harlocksp-updates"
+version = "0.2.0"
+description = "Bot Telegram con gli aggiornamenti delle partite Dota 2 di HarlockSP"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C4", "PT"]
+ignore = [
+    "RUF001",  # testi in italiano con emoji e caratteri tipografici: voluti
+    "RUF003",
+    "PT018",   # assert composti nei test: leggibili così
+]

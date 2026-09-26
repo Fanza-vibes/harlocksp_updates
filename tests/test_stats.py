@@ -31,10 +31,12 @@ def test_summarize_empty():
 
 
 def test_summarize_ties_prefer_more_wins():
-    s = summarize([
-        make_match(1, hero_id=5, radiant_win=False),
-        make_match(2, hero_id=7, radiant_win=True),
-    ])
+    s = summarize(
+        [
+            make_match(1, hero_id=5, radiant_win=False),
+            make_match(2, hero_id=7, radiant_win=True),
+        ]
+    )
     assert [h for h, _, _ in s.top_heroes] == [7, 5]
     assert s.winrate == 50
 

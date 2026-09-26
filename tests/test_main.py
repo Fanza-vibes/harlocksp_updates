@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -76,17 +77,17 @@ def test_sends_only_new_in_order(state_path):
 def test_no_new_matches_leaves_file_untouched(state_path):
     save_state(state_path, State(last_match_id=10, last_summary_date="2000-01-01"))
     run(CONFIG, state_path, FakeOpenDota([make_match(10)]), FakeSender(), now=NOW_NOON)
-    before = open(state_path).read()
+    before = Path(state_path).read_text()
     sender = FakeSender()
     run(CONFIG, state_path, FakeOpenDota([make_match(10), make_match(9)]), sender, now=NOW_NOON)
-    assert sender.sent == [] and open(state_path).read() == before
+    assert sender.sent == [] and Path(state_path).read_text() == before
 
 
 def test_api_error_keeps_state(state_path):
     save_state(state_path, State(last_match_id=10))
-    before = open(state_path).read()
+    before = Path(state_path).read_text()
     rc = run(CONFIG, state_path, FakeOpenDota(error=OpenDotaError("down")), FakeSender())
-    assert rc == EXIT_OK and open(state_path).read() == before
+    assert rc == EXIT_OK and Path(state_path).read_text() == before
 
 
 def test_api_error_on_first_run_creates_nothing(state_path):
@@ -104,16 +105,18 @@ def test_send_failure_midway_saves_progress(state_path):
 
 
 def test_heroes_cache_reused(state_path):
-    save_state(state_path, State(last_match_id=10, heroes={1: "Anti-Mage"},
-                                 heroes_updated_at="2026-09-24T00:00:00Z"))
+    save_state(
+        state_path, State(last_match_id=10, heroes={1: "Anti-Mage"}, heroes_updated_at="2026-09-24T00:00:00Z")
+    )
     od = FakeOpenDota([make_match(11, hero_id=1)])
     run(CONFIG, state_path, od, FakeSender(), now=NOW_NOON)
     assert od.hero_calls == 0
 
 
 def test_heroes_cache_refreshed_weekly(state_path):
-    save_state(state_path, State(last_match_id=10, heroes={1: "Vecchio"},
-                                 heroes_updated_at="2026-09-01T00:00:00Z"))
+    save_state(
+        state_path, State(last_match_id=10, heroes={1: "Vecchio"}, heroes_updated_at="2026-09-01T00:00:00Z")
+    )
     od = FakeOpenDota([make_match(11, hero_id=1)])
     sender = FakeSender()
     run(CONFIG, state_path, od, sender, now=NOW_NOON)
@@ -133,18 +136,17 @@ def test_heroes_failure_uses_fallback_name(state_path):
 
 
 def test_corrupted_state_is_first_run(state_path):
-    open(state_path, "w").write("{broken")
+    Path(state_path).write_text("{broken")
     sender = FakeSender()
     run(CONFIG, state_path, FakeOpenDota([make_match(50)]), sender)
-    assert sender.sent == [] and json.load(open(state_path))["last_match_id"] == 50
+    assert sender.sent == [] and json.loads(Path(state_path).read_text())["last_match_id"] == 50
 
 
 def test_dry_run_never_writes(state_path):
     sender = FakeSender()
     run(CONFIG, state_path, FakeOpenDota([make_match(1), make_match(2)]), sender, dry_run=True, last=5)
     assert len(sender.sent) == 2
-    with pytest.raises(FileNotFoundError):
-        open(state_path)
+    assert not Path(state_path).exists()
 
 
 def test_main_silences_urllib3_debug(tmp_path, monkeypatch):
@@ -162,6 +164,7 @@ def test_main_silences_urllib3_debug(tmp_path, monkeypatch):
 
 # --- riepilogo giornaliero -------------------------------------------------
 
+
 def ts(y, mo, d, h, mi=0):
     return int(datetime(y, mo, d, h, mi, tzinfo=ROME).timestamp())
 
@@ -169,7 +172,8 @@ def ts(y, mo, d, h, mi=0):
 def test_daily_summary_first_run_only_initializes(state_path):
     save_state(state_path, State(last_match_id=10))
     sender = FakeSender()
-    run(CONFIG, state_path, FakeOpenDota([make_match(10)]), sender, now=datetime(2026, 9, 25, 23, 5, tzinfo=ROME))
+    late = datetime(2026, 9, 25, 23, 5, tzinfo=ROME)
+    run(CONFIG, state_path, FakeOpenDota([make_match(10)]), sender, now=late)
     assert sender.sent == [] and load_state(state_path).last_summary_date == "2026-09-25"
 
 
@@ -227,6 +231,7 @@ def test_daily_summary_disabled(state_path):
 
 # --- giro completo con il bot ----------------------------------------------
 
+
 class FakeBot(FakeSender):
     def __init__(self, updates):
         super().__init__()
@@ -270,7 +275,58 @@ def test_opendota_down_leaves_commands_for_next_round(state_path):
 
 def test_dry_run_command(state_path, capsys):
     from src.telegram import DryRunSender
-    run(CONFIG, state_path, FakeOpenDota([make_match(11)]), DryRunSender(), dry_run=True,
-        command="/riepilogo oggi", now=NOW_NOON)
+
+    run(
+        CONFIG,
+        state_path,
+        FakeOpenDota([make_match(11)]),
+        DryRunSender(),
+        dry_run=True,
+        command="/riepilogo oggi",
+        now=NOW_NOON,
+    )
     out = capsys.readouterr().out
     assert "chat prova" in out and "Riepilogo di oggi" in out
+
+
+# --- curiosità -------------------------------------------------------------
+
+
+class SenderWithIds(FakeSender):
+    def send_message(self, text, chat_id=None, reply_to=None):
+        super().send_message(text)
+        return 1000 + len(self.sent)
+
+
+def test_sent_match_is_queued_for_trivia(state_path):
+    save_state(state_path, State(last_match_id=10, last_summary_date="2026-09-24"))
+    run(CONFIG, state_path, FakeOpenDotaTrivia([make_match(11)]), SenderWithIds(), now=NOW_NOON)
+    pending = load_state(state_path).pending_trivia
+    assert [(p.match_id, p.message_id) for p in pending] == [(11, 1001)]
+    assert pending[0].requested  # analisi chiesta già nello stesso giro
+
+
+class FakeOpenDotaTrivia(FakeOpenDota):
+    def match(self, match_id):
+        return {"match_id": match_id, "version": None, "players": []}
+
+    def request_parse(self, match_id):
+        pass
+
+    def hero_keys(self):
+        return {}
+
+
+def test_dry_run_partita(state_path, capsys):
+    from src.telegram import DryRunSender
+    from tests.fixtures_match import PLAYER_ID, parsed_match
+
+    class OD(FakeOpenDotaTrivia):
+        def match(self, match_id):
+            return parsed_match(match_id=match_id)
+
+    cfg = Config(player_id=PLAYER_ID, display_name="HarlockSP")
+    run(cfg, state_path, OD([make_match(1)]), DryRunSender(), dry_run=True, trivia_match=5, now=NOW_NOON)
+    out = capsys.readouterr().out
+    assert "Curiosità della partita" in out and "ULTRA KILL" in out
+    assert not Path(state_path).exists()

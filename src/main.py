@@ -1,10 +1,11 @@
 """Entrypoint di un giro del bot.
 
-1. nuove partite → messaggio nel canale
-2. messaggi privati al bot → risposte ai comandi
-3. dopo le 23 (ora italiana) → riepilogo giornaliero nel canale, se ha giocato
+1. nuove partite → scheda nel canale
+2. replay analizzati → curiosità in risposta alla scheda
+3. messaggi privati al bot → risposte ai comandi
+4. dopo le 23 (ora italiana) → riepilogo giornaliero nel canale, se ha giocato
 
-Uso: python -m src.main [--dry-run] [--last N] [--comando "/riepilogo oggi"]
+Uso: python -m src.main [--dry-run] [--last N] [--comando "/riepilogo oggi"] [--partita ID]
                         [--config config.yaml] [--state state.json]
 """
 
@@ -14,18 +15,26 @@ import argparse
 import logging
 import sys
 from datetime import datetime
+from typing import Protocol
 from zoneinfo import ZoneInfo
 
 from .commands import Bot, ensure_bot_commands, process_updates, reply_for
 from .config import Config, ConfigError, load_config
 from .data import MatchData, OpenDotaAPI
+from .followup import TriviaAPI, send_pending_trivia, trivia_text
 from .formatter import format_date, format_match, format_summary
 from .opendota import OpenDotaClient, OpenDotaError
-from .state import State, load_state, save_state
+from .state import Pending, State, load_state, save_state
 from .stats import chronological, daily_window, streak_until, summarize, summary_target
 from .telegram import DryRunSender, Sender, TelegramClient, TelegramError
+from .trivia import is_parsed
 
 log = logging.getLogger("harlocksp")
+
+
+class OpenDotaClientAPI(OpenDotaAPI, TriviaAPI, Protocol):
+    """Tutto ciò che un giro usa di OpenDota."""
+
 
 EXIT_OK = 0
 EXIT_SEND_FAILED = 1
@@ -65,11 +74,13 @@ def notify_new_matches(
         streak = streak_until(data.recent, match["match_id"])
         text = format_match(match, data.hero_name(match.get("hero_id")), config.display_name, streak)
         try:
-            sender.send_message(text)
+            message_id = sender.send_message(text)
         except TelegramError as exc:
             # lo stato su disco è già aggiornato all'ultima partita inviata con successo
             log.error("Invio della partita %s fallito: %s", match["match_id"], exc)
             return EXIT_SEND_FAILED
+        if message_id is not None and not dry_run:
+            state.add_pending(Pending(match["match_id"], message_id, int(data.now.timestamp())))
         state.last_match_id = max(state.last_match_id or 0, match["match_id"])
         save()
         log.info("Inviata partita %s", match["match_id"])
@@ -96,7 +107,8 @@ def send_daily_summary(state: State, data: MatchData, sender: Sender, config: Co
         return EXIT_OK
     if matches:
         heroes = data.heroes({m.get("hero_id") or 0 for m in matches})
-        text = format_summary(f"Riepilogo di {format_date(target)}", summarize(matches), heroes, config.display_name)
+        title = f"Riepilogo di {format_date(target)}"
+        text = format_summary(title, summarize(matches), heroes, config.display_name)
         try:
             sender.send_message(text)
         except TelegramError as exc:
@@ -112,13 +124,14 @@ def send_daily_summary(state: State, data: MatchData, sender: Sender, config: Co
 def run(
     config: Config,
     state_path: str,
-    client: OpenDotaAPI,
+    client: OpenDotaClientAPI,
     sender: Sender,
     *,
     bot: Bot | None = None,
     dry_run: bool = False,
     last: int = 0,
     command: str | None = None,
+    trivia_match: int | None = None,
     now: datetime | None = None,
 ) -> int:
     now = now or datetime.now(ZoneInfo(config.timezone))
@@ -138,10 +151,14 @@ def run(
     if command is not None:  # prova locale di un comando, senza Telegram
         sender.send_message(reply_for(command, data, config.display_name, now), chat_id="prova")
         return EXIT_OK
+    if trivia_match is not None:  # prova locale delle curiosità su una partita vera
+        return preview_trivia(trivia_match, client, sender, config, data)
 
     rc = notify_new_matches(state, data, sender, config, save, dry_run, last)
     if rc != EXIT_OK:
         return rc
+    send_pending_trivia(state, client, sender, config.player_id, data, now)
+    save()
     if bot is not None:
         ensure_bot_commands(bot, state)
         process_updates(bot, state, data, config.display_name, now)
@@ -151,16 +168,30 @@ def run(
     return rc
 
 
+def preview_trivia(match_id: int, client: TriviaAPI, sender: Sender, config: Config, data: MatchData) -> int:
+    try:
+        match = client.match(match_id)
+    except OpenDotaError as exc:
+        log.error("%s", exc)
+        return EXIT_OK
+    if not is_parsed(match):
+        log.warning("Replay non ancora analizzato da OpenDota: le curiosità saranno parziali")
+    text = trivia_text(match, config.player_id, client, data)
+    sender.send_message(text or "Nessuna curiosità notevole per questa partita.", reply_to=match_id)
+    return EXIT_OK
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Aggiornamenti Dota 2 su Telegram")
     p.add_argument("--dry-run", action="store_true", help="stampa i messaggi, non invia e non salva")
     p.add_argument("--last", type=int, default=0, help="con --dry-run: mostra le ultime N partite")
     p.add_argument("--comando", dest="command", help='con --dry-run: prova un comando, es. "/riepilogo oggi"')
+    p.add_argument("--partita", dest="trivia_match", type=int, help="con --dry-run: curiosità di una partita")
     p.add_argument("--config", default="config.yaml")
     p.add_argument("--state", default="state.json")
     args = p.parse_args(argv)
-    if args.command is not None and not args.dry_run:
-        p.error("--comando si usa solo insieme a --dry-run")
+    if (args.command is not None or args.trivia_match is not None) and not args.dry_run:
+        p.error("--comando e --partita si usano solo insieme a --dry-run")
     return args
 
 
@@ -183,8 +214,15 @@ def main(argv: list[str] | None = None) -> int:
         assert config.telegram_token and config.telegram_chat_id
         sender = bot = TelegramClient(config.telegram_token, config.telegram_chat_id)
     return run(
-        config, args.state, OpenDotaClient(), sender,
-        bot=bot, dry_run=args.dry_run, last=args.last, command=args.command,
+        config,
+        args.state,
+        OpenDotaClient(),
+        sender,
+        bot=bot,
+        dry_run=args.dry_run,
+        last=args.last,
+        command=args.command,
+        trivia_match=args.trivia_match,
     )
 
 

@@ -1,0 +1,7 @@
+# Una volta al mese propone di aggiornare le GitHub Actions (es. avvisi come "Node.js 20 deprecato").
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

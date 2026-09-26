@@ -1,11 +1,17 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
 
 from src.commands import (
-    BOT_COMMANDS, COMMANDS_VERSION, MAX_REPLIES_PER_CHAT, ensure_bot_commands, parse_command,
-    private_messages, process_updates, reply_for,
+    BOT_COMMANDS,
+    COMMANDS_VERSION,
+    MAX_REPLIES_PER_CHAT,
+    ensure_bot_commands,
+    parse_command,
+    private_messages,
+    process_updates,
+    reply_for,
 )
 from src.data import MatchData
 from src.opendota import OpenDotaError
@@ -67,13 +73,16 @@ def data_with(recent, client=None):
     return MatchData(client or FakeOpenDota(), 1, recent, State(), NOW)
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("/ultima", ("ultima", "")),
-    ("/riepilogo@Harlocksp_updatesbot  Settimana ", ("riepilogo", "settimana")),
-    ("/START", ("start", "")),
-    ("ciao", None),
-    ("  ", None),
-])
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("/ultima", ("ultima", "")),
+        ("/riepilogo@Harlocksp_updatesbot  Settimana ", ("riepilogo", "settimana")),
+        ("/START", ("start", "")),
+        ("ciao", None),
+        ("  ", None),
+    ],
+)
 def test_parse_command(text, expected):
     assert parse_command(text) == expected
 
@@ -142,7 +151,13 @@ def test_riepilogo_opendota_down():
 
 
 def test_process_updates_replies_and_advances_offset():
-    bot = FakeBot([upd(10, "/aiuto", chat_id=1), upd(11, "/ultima", chat_id=2), upd(12, "x", chat_type="group")])
+    bot = FakeBot(
+        [
+            upd(10, "/aiuto", chat_id=1),
+            upd(11, "/ultima", chat_id=2),
+            upd(12, "x", chat_type="group"),
+        ]
+    )
     state = State(telegram_offset=10)
     process_updates(bot, state, data_with([make_match(5)]), "H", NOW)
     assert bot.offsets == [10]

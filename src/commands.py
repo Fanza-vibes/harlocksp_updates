@@ -35,7 +35,9 @@ MAX_REPLIES_PER_CHAT = 3  # per giro: evita spam e troppe chiamate a OpenDota
 
 class Bot(Protocol):
     def get_updates(self, offset: int | None, limit: int = 50) -> list[dict]: ...
-    def send_message(self, text: str, chat_id: str | int | None = None) -> None: ...
+    def send_message(
+        self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
+    ) -> int | None: ...
     def set_my_commands(self, commands: list[tuple[str, str]]) -> None: ...
 
 
@@ -72,20 +74,22 @@ def parse_command(text: str) -> tuple[str, str] | None:
 
 def help_text(display_name: str) -> str:
     name = escape(display_name)
-    return "\n".join([
-        f"👋 Ciao! Sono il bot degli aggiornamenti Dota 2 di <b>{name}</b>.",
-        "",
-        "Comandi disponibili:",
-        "• /ultima – scheda dell'ultima partita",
-        "• /riepilogo oggi – le partite di oggi",
-        "• /riepilogo settimana – ultimi 7 giorni",
-        "• /riepilogo mese – ultimi 30 giorni",
-        "",
-        "⏳ Non sono sempre online: leggo i messaggi ogni 5-10 minuti circa, "
-        "quindi la risposta può arrivare con qualche minuto di ritardo.",
-        "",
-        "Gli aggiornamenti di ogni partita e il riepilogo delle 23 arrivano nel canale.",
-    ])
+    return "\n".join(
+        [
+            f"👋 Ciao! Sono il bot degli aggiornamenti Dota 2 di <b>{name}</b>.",
+            "",
+            "Comandi disponibili:",
+            "• /ultima – scheda dell'ultima partita",
+            "• /riepilogo oggi – le partite di oggi",
+            "• /riepilogo settimana – ultimi 7 giorni",
+            "• /riepilogo mese – ultimi 30 giorni",
+            "",
+            "⏳ Non sono sempre online: leggo i messaggi ogni 5-10 minuti circa, "
+            "quindi la risposta può arrivare con qualche minuto di ritardo.",
+            "",
+            "Gli aggiornamenti di ogni partita e il riepilogo delle 23 arrivano nel canale.",
+        ]
+    )
 
 
 def reply_for(text: str, data: MatchData, display_name: str, now: datetime) -> str:
