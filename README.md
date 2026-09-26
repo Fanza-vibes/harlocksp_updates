@@ -162,7 +162,6 @@ python -m src.main
 |----------------|-------------------------------------|
 | `player_id`    | account ID Dota 2 (quello di Dotabuff/OpenDota) |
 | `display_name` | nome mostrato nei messaggi          |
-| `language`     | lingua dei messaggi (per ora `it`)  |
 | `timezone`     | fuso orario dei riepiloghi (default `Europe/Rome`; il cron di GitHub è in UTC, la conversione la fa il codice) |
 | `daily_summary_hour` | ora del riepilogo giornaliero nel canale (default `23`; `null` per disattivarlo) |
 
@@ -186,6 +185,7 @@ Il menu dei comandi (il tasto "/" nella chat) viene impostato automaticamente da
 | `OpenDota …: HTTP 5xx dopo 4 tentativi`      | OpenDota temporaneamente giù: si ritenta da solo al giro dopo |
 | push rifiutato (`403`) nello step "Salva state.json" | *Workflow permissions* non impostato su "Read and write" |
 | il bot non risponde ai comandi               | aspetta il giro successivo (di solito 5-15 min); in Actions controlla che ci siano avvii "schedule" verdi |
+| pochi avvii "schedule" (anche ore di buco)   | il cron di GitHub è "best effort" e salta molti giri sui repository poco attivi: la soluzione è una sveglia esterna (es. cron-job.org) che avvia il workflow |
 | in Actions ci sono solo avvii manuali, nessuno "schedule" | su un repository nuovo GitHub può impiegare qualche ora ad attivare il cron: nel frattempo usa Run workflow |
 | `getUpdates … 409 Conflict`                  | al bot è collegato un webhook o un altro programma che legge i messaggi: va rimosso |
 | le curiosità di una partita non arrivano     | OpenDota non è riuscito ad analizzare il replay (capita): dopo 3 ore il bot rinuncia |

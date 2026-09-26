@@ -68,7 +68,8 @@ python -m src.main --dry-run --partita <match_id>           # curiosità di una 
 - Dipendenze minime: solo `requests`, `PyYAML` e `tzdata` a runtime; `pytest`, `responses` e `ruff` per sviluppo e test.
 - I test non fanno rete: usano `responses` oppure i fake in `tests/test_main.py`; `sleep` è iniettabile.
 - **Mai** loggare il token né l'URL di Telegram (contiene il token): nelle eccezioni usare `from None`.
-- `state.json` ha un formato deterministico (chiavi ordinate) così il workflow committa solo se cambia.
+- `state.json` ha un formato deterministico (ordine fisso dei campi, eroi in ordine numerico) così il
+  workflow committa solo se cambia; `save_state` non riscrive il file se il contenuto è identico.
 - Testi utente, log e commit in italiano; un commit per ogni step logico.
 - Progetto per divertimento, non commerciale: preferire soluzioni semplici a costo zero.
 - Roadmap: Fase 4 (keep-alive contro la disattivazione dei cron dopo 60 giorni, più giocatori).
