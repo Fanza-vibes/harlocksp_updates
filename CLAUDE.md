@@ -65,7 +65,9 @@ python -m src.main --dry-run --partita <match_id>           # curiosità di una 
 
 - Python 3.12 nel CI (il codice resta compatibile con 3.11), type hints, funzioni piccole.
 - Stile: ruff (lint + format) e mypy controllati nel CI; docstring obbligatorie per moduli, classi e
-  funzioni pubbliche (ruff D100/D101/D103). La guida per sviluppatori è nel README ("Per sviluppatori").
+  funzioni pubbliche (ruff D100/D101/D103).
+- Il README è documentazione generale (cosa fa, comandi, sviluppo in breve): niente istruzioni su
+  segreti, token o configurazione di GitHub Actions. I dettagli tecnici stanno qui.
 - GitHub Actions alla major più recente (Node 24); Dependabot propone gli aggiornamenti ogni mese.
 - Dipendenze minime: solo `requests`, `PyYAML` e `tzdata` a runtime; `pytest`, `responses` e `ruff` per sviluppo e test.
 - I test non fanno rete: usano `responses` oppure i fake in `tests/test_main.py`; `sleep` è iniettabile.
