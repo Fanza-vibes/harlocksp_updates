@@ -36,6 +36,8 @@ Regole di comportamento:
   l'owner riceve una mail); il progresso già fatto viene comunque committato (`if: always()`).
 - Radiant = `player_slot < 128`; vittoria = `radiant_win == is_radiant`.
 - Streak calcolata dalle ultime 20 partite (nessuno stato da mantenere).
+- Titolo: "IL MAESTRO HA VINTO!" / "IL MAESTRO HA PERSO!" (🔴 ripetuto per le sconfitte di fila, max 5);
+  riga della serie subito sotto il titolo (formatter.streak_lines).
 - Comandi: solo chat private, max 3 risposte per chat per giro; l'offset avanza anche per i messaggi
   ignorati; se OpenDota è giù l'offset NON avanza (i comandi si evadono al giro dopo).
 - Riepilogo giornaliero: finestra [ora X del giorno prima, ora X), partite classificate per ora di

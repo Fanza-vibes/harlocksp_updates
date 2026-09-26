@@ -21,15 +21,28 @@ Cosa fa:
 Esempio di messaggio:
 
 ```
-🌟 ✅ VITTORIA – HarlockSP
+🌟 ✅ IL MAESTRO HA VINTO! 🏆
+🔥 3 vittorie di fila! Il maestro è inarrestabile!
+👤 HarlockSP
 🦸 Eroe: Anti-Mage (Dire)
 ⚔️ K/D/A: 14/0/12 (KDA 26.0)
 💰 GPM/XPM: 742/810 · 🗡 LH: 388
 ⏱ Durata: 43:10 · 🎮 Classificata · All Pick
 🛡 Partita perfetta: 0 morti!
-🔥 3 vittorie di fila!
 🔗 Dotabuff · OpenDota
 ```
+
+Quando perde, i pallini rossi crescono con le sconfitte di fila (fino a 5) e la serie viene
+sottolineata subito sotto il titolo:
+
+```
+🔴🔴🔴 IL MAESTRO HA PERSO ANCORA!
+💀 3 SCONFITTE DI FILA! Qualcuno lo consoli…
+```
+
+Da 2 sconfitte di fila c'è un avviso, a 3 "Qualcuno lo consoli…", a 4 "Il maestro è in crisi!",
+da 5 in su "Allarme rosso". La vittoria che interrompe almeno 3 sconfitte diventa
+"💪 Maledizione spezzata".
 
 ## Per gli amici
 

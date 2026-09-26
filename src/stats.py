@@ -51,6 +51,15 @@ def streak_until(matches: list[Match], match_id: int) -> int:
     return count if won else -count
 
 
+def streak_before(matches: list[Match], match_id: int) -> int:
+    """Serie che era in corso prima di match_id (0 se è la prima partita della lista)."""
+    ordered = chronological(matches)
+    idx = next((i for i, m in enumerate(ordered) if m["match_id"] == match_id), None)
+    if not idx:
+        return 0
+    return streak_until(ordered, ordered[idx - 1]["match_id"])
+
+
 @dataclass
 class Summary:
     games: int

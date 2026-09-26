@@ -17,7 +17,7 @@ from .data import MatchData
 from .formatter import format_match, format_summary
 from .opendota import OpenDotaError
 from .state import State
-from .stats import start_of_day, streak_until, summarize
+from .stats import start_of_day, streak_before, streak_until, summarize
 from .telegram import TelegramError
 
 log = logging.getLogger(__name__)
@@ -112,7 +112,8 @@ def _last_match(data: MatchData, display_name: str) -> str:
         return "Nessuna partita trovata."
     last = data.recent[-1]
     streak = streak_until(data.recent, last["match_id"])
-    return format_match(last, data.hero_name(last.get("hero_id")), display_name, streak)
+    previous = streak_before(data.recent, last["match_id"])
+    return format_match(last, data.hero_name(last.get("hero_id")), display_name, streak, previous)
 
 
 def _summary(period: str, data: MatchData, display_name: str, now: datetime) -> str:

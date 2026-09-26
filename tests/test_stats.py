@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from src.stats import daily_window, in_window, streak_until, summarize, summary_target
+from src.stats import daily_window, in_window, streak_before, streak_until, summarize, summary_target
 from tests.conftest import make_match
 
 ROME = ZoneInfo("Europe/Rome")
@@ -62,3 +62,10 @@ def test_in_window_uses_end_time():
         make_match(3, start_time=int(start.timestamp()) - 100, duration=200),  # finisce dopo l'inizio
     ]
     assert [m["match_id"] for m in in_window(ms, start, end)] == [1, 3]
+
+
+def test_streak_before():
+    ms = results(False, False, False, True)
+    assert streak_before(ms, 4) == -3
+    assert streak_before(ms, 1) == 0
+    assert streak_before(ms, 99) == 0

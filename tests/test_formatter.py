@@ -9,6 +9,8 @@ from src.formatter import (
     is_radiant,
     is_win,
     mode_name,
+    result_header,
+    streak_lines,
 )
 from src.stats import summarize
 from tests.conftest import make_match
@@ -43,7 +45,8 @@ def test_mode_name():
 
 def test_format_win_radiant():
     text = format_match(make_match(123), "Anti-Mage", "HarlockSP")
-    assert "VITTORIA" in text and "SCONFITTA" not in text
+    assert text.startswith("✅ <b>IL MAESTRO HA VINTO!</b>") and "PERSO" not in text
+    assert "👤 HarlockSP" in text
     assert "Anti-Mage</b> (Radiant)" in text
     assert "12/3/8" in text
     assert "650/720" in text and "LH: 312" in text
@@ -55,7 +58,7 @@ def test_format_win_radiant():
 
 def test_format_loss_dire():
     text = format_match(make_match(5, player_slot=130, radiant_win=True), "Pudge", "HarlockSP")
-    assert "SCONFITTA" in text and "(Dire)" in text
+    assert text.startswith("🔴 <b>IL MAESTRO HA PERSO!</b>") and "(Dire)" in text
 
 
 def test_format_escapes_html():
@@ -66,7 +69,7 @@ def test_format_escapes_html():
 
 def test_format_tolerates_missing_fields():
     text = format_match({"match_id": 9, "player_slot": 0, "radiant_win": None}, "X", "Y")
-    assert "SCONFITTA" in text and "0/0/0" in text
+    assert "IL MAESTRO HA PERSO!" in text and "0/0/0" in text
 
 
 def test_highlights_perfect_game():
@@ -79,10 +82,52 @@ def test_highlights_stellar_kda_and_massacre():
     assert any("KDA stellare" in line for line in lines) and any("22 kill" in line for line in lines)
 
 
-def test_highlights_streaks():
-    assert any("3 vittorie di fila" in line for line in highlights(make_match(1, deaths=5), streak=3))
-    assert any("4 sconfitte di fila" in line for line in highlights(make_match(1, deaths=5), streak=-4))
-    assert highlights(make_match(1, deaths=5), streak=2) == []
+def test_highlights_ignore_streaks():
+    assert highlights(make_match(1, deaths=5)) == []
+
+
+@pytest.mark.parametrize(
+    ("streak", "header"),
+    [
+        (-1, "🔴 <b>IL MAESTRO HA PERSO!</b>"),
+        (-2, "🔴🔴 <b>IL MAESTRO HA PERSO ANCORA!</b>"),
+        (-4, "🔴🔴🔴🔴 <b>IL MAESTRO HA PERSO ANCORA!</b>"),
+        (-9, "🔴🔴🔴🔴🔴 <b>IL MAESTRO HA PERSO ANCORA!</b>"),  # massimo 5 pallini
+    ],
+)
+def test_loss_header_grows_with_streak(streak, header):
+    assert result_header(False, streak) == header
+
+
+@pytest.mark.parametrize(
+    ("streak", "expected"),
+    [
+        (-1, None),
+        (-2, "2 sconfitte di fila"),
+        (-3, "3 SCONFITTE DI FILA!</b> Qualcuno lo consoli"),
+        (-4, "4 SCONFITTE DI FILA!</b> Il maestro è in crisi"),
+        (-7, "🆘 <b>7 SCONFITTE DI FILA!</b> Allarme rosso"),
+        (2, None),
+        (3, "3 vittorie di fila!</b> Il maestro è inarrestabile"),
+    ],
+)
+def test_streak_lines(streak, expected):
+    lines = streak_lines(streak)
+    if expected is None:
+        assert lines == []
+    else:
+        assert len(lines) == 1 and expected in lines[0]
+
+
+def test_curse_broken():
+    assert "Maledizione spezzata</b> dopo 4 sconfitte" in streak_lines(1, previous=-4)[0]
+    assert streak_lines(1, previous=-2) == []
+
+
+def test_loss_streak_right_under_header():
+    lines = format_match(make_match(1, radiant_win=False), "Pudge", "HarlockSP", streak=-3).split("\n")
+    assert lines[0] == "🔴🔴🔴 <b>IL MAESTRO HA PERSO ANCORA!</b>"
+    assert "3 SCONFITTE DI FILA" in lines[1]
 
 
 def test_format_summary():
