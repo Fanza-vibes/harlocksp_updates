@@ -46,14 +46,14 @@ class OpenDotaClient:
 
     def recent_matches(self, player_id: int) -> list[dict[str, Any]]:
         """Ultime 20 partite del giocatore (una sola chiamata, usata a ogni giro)."""
-        data = self._get(f"/players/{player_id}/recentMatches")
+        data = self._request("GET", f"/players/{player_id}/recentMatches")
         if not isinstance(data, list):
             raise OpenDotaError("recentMatches: risposta inattesa (non è una lista)")
         return [m for m in data if isinstance(m, dict) and isinstance(m.get("match_id"), int)]
 
     def player_matches(self, player_id: int, days: int) -> list[dict[str, Any]]:
         """Partite degli ultimi `days` giorni (una sola chiamata, anche per un mese)."""
-        data = self._get(f"/players/{player_id}/matches?date={int(days)}")
+        data = self._request("GET", f"/players/{player_id}/matches?date={int(days)}")
         if not isinstance(data, list):
             raise OpenDotaError("matches: risposta inattesa (non è una lista)")
         return [m for m in data if isinstance(m, dict) and isinstance(m.get("match_id"), int)]
@@ -86,9 +86,6 @@ class OpenDotaClient:
                 raise OpenDotaError("heroes: risposta inattesa (non è una lista)")
             self._heroes_cache = [h for h in data if isinstance(h, dict) and isinstance(h.get("id"), int)]
         return self._heroes_cache
-
-    def _get(self, path: str) -> Any:
-        return self._request("GET", path)
 
     def _request(self, method: str, path: str) -> Any:
         url = self.base_url + path
