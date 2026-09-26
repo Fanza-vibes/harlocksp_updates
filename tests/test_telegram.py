@@ -86,3 +86,41 @@ def test_send_returns_message_id_and_replies():
     body = responses.calls[0].request.body
     assert b'"reply_parameters": {"message_id": 5, "allow_sending_without_reply": true}' in body
     assert b'"link_preview_options": {"is_disabled": true}' in body
+
+
+@responses.activate
+@pytest.mark.parametrize(
+    ("name", "method", "field"), [("gg.gif", "sendAnimation", "animation"), ("gg.PNG", "sendPhoto", "photo")]
+)
+def test_send_media_uploads_file(tmp_path, name, method, field):
+    url = f"https://api.telegram.org/bot{TOKEN}/{method}"
+    responses.post(url, json={"ok": True, "result": {"message_id": 88}})
+    path = tmp_path / name
+    path.write_bytes(b"GIF89a")
+    assert client().send_media(path, "<b>didascalia</b>", reply_to=5) == 88
+    body = responses.calls[0].request.body
+    assert f'name="{field}"; filename="{name}"'.encode() in body
+    assert b"<b>didascalia</b>" in body and b'name="parse_mode"' in body
+    assert b'"message_id": 5' in body
+
+
+@responses.activate
+def test_send_media_retry_rereads_file(tmp_path):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    responses.post(url, status=502)
+    responses.post(url, json={"ok": True, "result": {"message_id": 1}})
+    path = tmp_path / "a.png"
+    path.write_bytes(b"PNGDATA")
+    client().send_media(path, "x")
+    assert b"PNGDATA" in responses.calls[1].request.body  # il file viene rimandato per intero
+
+
+@responses.activate
+def test_send_media_error_does_not_leak_token(tmp_path):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    responses.post(url, status=400, json={"ok": False, "description": "Bad Request: wrong file"})
+    path = tmp_path / "a.png"
+    path.write_bytes(b"x")
+    with pytest.raises(TelegramError) as exc:
+        client().send_media(path, "x")
+    assert "SUPERSECRET" not in str(exc.value)
