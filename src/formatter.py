@@ -66,7 +66,9 @@ MONTHS = [
     "dicembre",
 ]
 
-STREAK_MIN = 3
+STREAK_MIN = 3  # vittorie di fila da festeggiare
+LOSS_STREAK_MIN = 2  # sconfitte di fila da sottolineare
+CURSE_BROKEN_MIN = 3  # vittoria che interrompe almeno N sconfitte di fila
 KDA_STELLAR = 10.0
 KILLS_MANY = 20
 
@@ -101,8 +103,35 @@ def match_links(match_id: int) -> str:
     )
 
 
-def highlights(match: dict[str, Any], streak: int = 0) -> list[str]:
-    """Le righe speciali per le partite notevoli (vuota = partita normale)."""
+def result_header(win: bool, streak: int = 0) -> str:
+    """Titolo del messaggio: più sconfitte di fila = più pallini rossi."""
+    if win:
+        return "✅ <b>IL MAESTRO HA VINTO!</b> 🏆"
+    losses = max(1, -streak)
+    verb = "HA PERSO ANCORA" if losses >= LOSS_STREAK_MIN else "HA PERSO"
+    return f"{'🔴' * min(losses, 5)} <b>IL MAESTRO {verb}!</b>"
+
+
+def streak_lines(streak: int, previous: int = 0) -> list[str]:
+    """Righe sulla serie in corso, subito sotto il titolo. Le sconfitte di fila vengono enfatizzate."""
+    if streak >= STREAK_MIN:
+        return [f"🔥 <b>{streak} vittorie di fila!</b> Il maestro è inarrestabile!"]
+    if streak == 1 and previous <= -CURSE_BROKEN_MIN:
+        return [f"💪 <b>Maledizione spezzata</b> dopo {-previous} sconfitte di fila!"]
+    losses = -streak
+    if losses < LOSS_STREAK_MIN:
+        return []
+    if losses == 2:
+        return ["😬 <b>2 sconfitte di fila</b>… niente panico."]
+    if losses == 3:
+        return ["💀 <b>3 SCONFITTE DI FILA!</b> Qualcuno lo consoli…"]
+    if losses == 4:
+        return ["🚨 <b>4 SCONFITTE DI FILA!</b> Il maestro è in crisi!"]
+    return [f"🆘 <b>{losses} SCONFITTE DI FILA!</b> Allarme rosso: togliete il mouse al maestro!"]
+
+
+def highlights(match: dict[str, Any]) -> list[str]:
+    """Le righe speciali per le prestazioni notevoli (vuota = partita normale)."""
     k, d, a = kda(match)
     out = []
     if d == 0 and k + a >= 5:
@@ -111,23 +140,23 @@ def highlights(match: dict[str, Any], streak: int = 0) -> list[str]:
         out.append(f"🌟 KDA stellare: <b>{kda_ratio(match):.1f}</b>")
     if k >= KILLS_MANY:
         out.append(f"🩸 Massacro: <b>{k} kill</b>")
-    if streak >= STREAK_MIN:
-        out.append(f"🔥 <b>{streak} vittorie di fila!</b>")
-    elif streak <= -STREAK_MIN:
-        out.append(f"💀 <b>{-streak} sconfitte di fila…</b>")
     return out
 
 
-def format_match(match: dict[str, Any], hero_name: str, display_name: str, streak: int = 0) -> str:
+def format_match(
+    match: dict[str, Any], hero_name: str, display_name: str, streak: int = 0, previous_streak: int = 0
+) -> str:
     win = is_win(match)
     side = "Radiant" if is_radiant(int(match.get("player_slot") or 0)) else "Dire"
-    header = "✅ <b>VITTORIA</b>" if win else "❌ <b>SCONFITTA</b>"
-    special = highlights(match, streak)
+    header = result_header(win, streak)
+    special = highlights(match)
     if special:
         header = "🌟 " + header
     k, d, a = kda(match)
     lines = [
-        f"{header} – {escape(display_name)}",
+        header,
+        *streak_lines(streak, previous_streak),
+        f"👤 {escape(display_name)}",
         f"🦸 Eroe: <b>{escape(hero_name)}</b> ({side})",
         f"⚔️ K/D/A: <b>{k}/{d}/{a}</b> (KDA {kda_ratio(match):.1f})",
         f"💰 GPM/XPM: {int(match.get('gold_per_min') or 0)}/{int(match.get('xp_per_min') or 0)}"

@@ -25,7 +25,7 @@ from .followup import TriviaAPI, send_pending_trivia, trivia_text
 from .formatter import format_date, format_match, format_summary
 from .opendota import OpenDotaClient, OpenDotaError
 from .state import Pending, State, load_state, save_state
-from .stats import chronological, daily_window, streak_until, summarize, summary_target
+from .stats import chronological, daily_window, streak_before, streak_until, summarize, summary_target
 from .telegram import DryRunSender, Sender, TelegramClient, TelegramError
 from .trivia import is_parsed
 
@@ -72,7 +72,9 @@ def notify_new_matches(
     data.heroes({m.get("hero_id") or 0 for m in to_send})
     for match in to_send:
         streak = streak_until(data.recent, match["match_id"])
-        text = format_match(match, data.hero_name(match.get("hero_id")), config.display_name, streak)
+        previous = streak_before(data.recent, match["match_id"])
+        hero = data.hero_name(match.get("hero_id"))
+        text = format_match(match, hero, config.display_name, streak, previous)
         try:
             message_id = sender.send_message(text)
         except TelegramError as exc:

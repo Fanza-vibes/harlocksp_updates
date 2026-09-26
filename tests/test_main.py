@@ -330,3 +330,21 @@ def test_dry_run_partita(state_path, capsys):
     out = capsys.readouterr().out
     assert "Curiosità della partita" in out and "ULTRA KILL" in out
     assert not Path(state_path).exists()
+
+
+def test_channel_message_emphasizes_loss_streak(state_path):
+    save_state(state_path, State(last_match_id=12, last_summary_date="2026-09-24"))
+    ms = [make_match(i, radiant_win=False, start_time=1000 * i) for i in (10, 11, 12, 13)]
+    sender = FakeSender()
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=NOW_NOON)
+    assert sender.sent[0].startswith("🔴🔴🔴🔴 <b>IL MAESTRO HA PERSO ANCORA!</b>")
+    assert "4 SCONFITTE DI FILA" in sender.sent[0]
+
+
+def test_channel_message_curse_broken(state_path):
+    save_state(state_path, State(last_match_id=12, last_summary_date="2026-09-24"))
+    ms = [make_match(i, radiant_win=False, start_time=1000 * i) for i in (10, 11, 12)]
+    ms.append(make_match(13, radiant_win=True, start_time=13000))
+    sender = FakeSender()
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=NOW_NOON)
+    assert "IL MAESTRO HA VINTO!" in sender.sent[0] and "Maledizione spezzata" in sender.sent[0]
