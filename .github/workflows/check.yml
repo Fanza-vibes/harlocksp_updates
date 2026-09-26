@@ -28,6 +28,8 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Controlla e invia
+        # limite sul passo (non sul job): se scade, il salvataggio di state.json gira comunque
+        timeout-minutes: 6
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
