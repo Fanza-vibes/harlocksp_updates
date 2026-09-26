@@ -2,7 +2,6 @@
 # si passano come variabili d'ambiente / GitHub Secrets.
 player_id: 295689331
 display_name: HarlockSP
-language: it
 # Fuso orario per i riepiloghi (il cron di GitHub è in UTC: la conversione la fa il codice)
 timezone: Europe/Rome
 # Riepilogo giornaliero nel canale a quest'ora, solo nei giorni in cui ha giocato. null = disattivato

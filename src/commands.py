@@ -34,6 +34,8 @@ MAX_REPLIES_PER_CHAT = 3  # per giro: evita spam e troppe chiamate a OpenDota
 
 
 class Bot(Protocol):
+    """Ciò che i comandi usano del bot Telegram (in produzione: `TelegramClient`)."""
+
     def get_updates(self, offset: int | None, limit: int = 50) -> list[dict]: ...
     def send_message(
         self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
@@ -43,6 +45,8 @@ class Bot(Protocol):
 
 @dataclass(frozen=True)
 class Incoming:
+    """Un messaggio di testo ricevuto in chat privata, già filtrato da `private_messages`."""
+
     update_id: int
     chat_id: int
     text: str
@@ -73,6 +77,7 @@ def parse_command(text: str) -> tuple[str, str] | None:
 
 
 def help_text(display_name: str) -> str:
+    """Testo di benvenuto e aiuto: risposta a /start, /aiuto e a qualsiasi testo non riconosciuto."""
     name = escape(display_name)
     return "\n".join(
         [
@@ -93,6 +98,11 @@ def help_text(display_name: str) -> str:
 
 
 def reply_for(text: str, data: MatchData, display_name: str, now: datetime) -> str:
+    """Risposta (HTML) a un messaggio privato. Non solleva mai eccezioni.
+
+    Il testo dell'utente non viene mai ripetuto nella risposta, così non serve farne l'escape.
+    Se OpenDota non risponde, restituisce un messaggio di scuse invece di propagare l'errore.
+    """
     cmd = parse_command(text)
     if cmd is None or cmd[0] in ("start", "aiuto", "help"):
         return help_text(display_name)

@@ -18,12 +18,20 @@ HEROES_MAX_AGE = timedelta(days=7)
 
 
 class OpenDotaAPI(Protocol):
+    """Ciò che `MatchData` usa di OpenDota (in produzione: `OpenDotaClient`; nei test: fake)."""
+
     def recent_matches(self, player_id: int) -> list[Match]: ...
     def player_matches(self, player_id: int, days: int) -> list[Match]: ...
     def heroes(self) -> dict[int, str]: ...
 
 
 class MatchData:
+    """Accesso ai dati delle partite durante un giro.
+
+    Parte dalle partite recenti (già scaricate) e fa altre chiamate solo se servono, al massimo una
+    volta per periodo. Gestisce anche la cache dei nomi degli eroi salvata in `state.json`.
+    """
+
     def __init__(
         self,
         client: OpenDotaAPI,
@@ -75,6 +83,7 @@ class MatchData:
         return self.state.heroes
 
     def hero_name(self, hero_id: int | None) -> str:
+        """Nome visualizzato di un eroe, con 'Eroe #id' come riserva se l'eroe è sconosciuto."""
         return self.heroes({hero_id or 0}).get(hero_id or 0, f"Eroe #{hero_id}")
 
     def _heroes_stale(self) -> bool:

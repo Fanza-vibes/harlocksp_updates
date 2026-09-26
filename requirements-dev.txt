@@ -2,3 +2,6 @@
 pytest>=8
 responses>=0.25
 ruff>=0.6
+mypy>=1.10
+types-requests
+types-PyYAML

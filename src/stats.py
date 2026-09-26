@@ -12,23 +12,28 @@ Match = dict[str, Any]
 
 
 def is_radiant(player_slot: int) -> bool:
+    """Gli slot 0-127 sono Radiant, 128-255 Dire (convenzione di Valve/OpenDota)."""
     return player_slot < 128
 
 
 def is_win(match: Match) -> bool:
+    """Vittoria se la squadra del giocatore coincide con quella vincitrice."""
     return bool(match.get("radiant_win")) == is_radiant(int(match.get("player_slot") or 0))
 
 
 def kda(match: Match) -> tuple[int, int, int]:
+    """(kill, morti, assist) della partita, 0 se il dato manca."""
     return tuple(int(match.get(x) or 0) for x in ("kills", "deaths", "assists"))  # type: ignore[return-value]
 
 
 def kda_ratio(match: Match) -> float:
+    """Rapporto KDA classico: (kill + assist) / morti, con morti minimo 1."""
     k, d, a = kda(match)
     return (k + a) / max(d, 1)
 
 
 def chronological(matches: list[Match]) -> list[Match]:
+    """Partite ordinate dalla più vecchia alla più recente (a parità di orario, per ID)."""
     return sorted(matches, key=lambda m: (m.get("start_time") or 0, m["match_id"]))
 
 
@@ -62,6 +67,8 @@ def streak_before(matches: list[Match], match_id: int) -> int:
 
 @dataclass
 class Summary:
+    """Statistiche aggregate di un gruppo di partite (usate dai riepiloghi)."""
+
     games: int
     wins: int
     avg_kda: tuple[float, float, float]
@@ -71,14 +78,20 @@ class Summary:
 
     @property
     def losses(self) -> int:
+        """Numero di sconfitte."""
         return self.games - self.wins
 
     @property
     def winrate(self) -> float:
+        """Percentuale di vittorie (0-100)."""
         return 100 * self.wins / self.games if self.games else 0.0
 
 
 def summarize(matches: list[Match], top: int = 3) -> Summary | None:
+    """Aggrega le partite: vittorie, K/D/A medio, tempo di gioco, eroi più usati, miglior partita.
+
+    Restituisce None se la lista è vuota. La miglior partita è quella con il KDA più alto.
+    """
     if not matches:
         return None
     n = len(matches)
@@ -99,6 +112,7 @@ def summarize(matches: list[Match], top: int = 3) -> Summary | None:
 
 
 def end_time(match: Match) -> int:
+    """Timestamp unix di fine partita (inizio + durata)."""
     return int(match.get("start_time") or 0) + int(match.get("duration") or 0)
 
 
@@ -120,4 +134,5 @@ def daily_window(day: date, hour: int, tz: ZoneInfo) -> tuple[datetime, datetime
 
 
 def start_of_day(now: datetime) -> datetime:
+    """Mezzanotte dello stesso giorno, nello stesso fuso orario."""
     return now.replace(hour=0, minute=0, second=0, microsecond=0)

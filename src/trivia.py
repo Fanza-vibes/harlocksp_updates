@@ -58,6 +58,8 @@ BENCHMARKS_LOW = ("gold_per_min", "last_hits_per_min", "hero_damage_per_min")
 
 @dataclass(frozen=True)
 class Fact:
+    """Una curiosità: il testo (HTML) e un punteggio che decide quali pubblicare."""
+
     score: float
     text: str
 
@@ -68,6 +70,7 @@ def is_parsed(match: Match) -> bool:
 
 
 def find_player(match: Match, account_id: int) -> Player | None:
+    """Il giocatore con quell'account ID nella partita, se c'è (None se il profilo è privato)."""
     return next(
         (p for p in match.get("players") or [] if isinstance(p, dict) and p.get("account_id") == account_id),
         None,
@@ -92,10 +95,12 @@ def facts(match: Match, player: Player, hero_name: str, hero_keys: dict[str, str
 
 
 def pick(candidates: list[Fact], limit: int = MAX_FACTS) -> list[Fact]:
+    """Le `limit` curiosità con il punteggio più alto, dalla più notevole."""
     return sorted(candidates, key=lambda f: -f.score)[:limit]
 
 
 def format_trivia(hero_name: str, chosen: list[Fact]) -> str:
+    """Messaggio delle curiosità (HTML), pubblicato in risposta alla scheda della partita."""
     lines = [f"🔍 <b>Curiosità della partita</b> – {escape(hero_name)}", ""]
     lines += [f.text for f in chosen]
     return "\n".join(lines)

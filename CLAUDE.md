@@ -55,6 +55,7 @@ Regole di comportamento:
 pip install -r requirements-dev.txt
 python -m pytest                           # test, nessuna chiamata di rete
 ruff check src tests && ruff format src tests   # lint + formattazione (config in pyproject.toml)
+mypy src                                   # tipi
 python -m src.main --dry-run --last 3      # stampa, non invia, non scrive state.json
 python -m src.main --dry-run --comando "/riepilogo oggi"   # prova un comando
 python -m src.main --dry-run --partita <match_id>           # curiosità di una partita vera
@@ -63,12 +64,14 @@ python -m src.main --dry-run --partita <match_id>           # curiosità di una 
 ## Convenzioni
 
 - Python 3.12 nel CI (il codice resta compatibile con 3.11), type hints, funzioni piccole.
-- Stile: ruff (lint + format) controllato nel CI; tipi verificabili con `mypy src`.
+- Stile: ruff (lint + format) e mypy controllati nel CI; docstring obbligatorie per moduli, classi e
+  funzioni pubbliche (ruff D100/D101/D103). La guida per sviluppatori è nel README ("Per sviluppatori").
 - GitHub Actions alla major più recente (Node 24); Dependabot propone gli aggiornamenti ogni mese.
 - Dipendenze minime: solo `requests`, `PyYAML` e `tzdata` a runtime; `pytest`, `responses` e `ruff` per sviluppo e test.
 - I test non fanno rete: usano `responses` oppure i fake in `tests/test_main.py`; `sleep` è iniettabile.
 - **Mai** loggare il token né l'URL di Telegram (contiene il token): nelle eccezioni usare `from None`.
-- `state.json` ha un formato deterministico (chiavi ordinate) così il workflow committa solo se cambia.
+- `state.json` ha un formato deterministico (ordine fisso dei campi, eroi in ordine numerico) così il
+  workflow committa solo se cambia; `save_state` non riscrive il file se il contenuto è identico.
 - Testi utente, log e commit in italiano; un commit per ogni step logico.
 - Progetto per divertimento, non commerciale: preferire soluzioni semplici a costo zero.
 - Roadmap: Fase 4 (keep-alive contro la disattivazione dei cron dopo 60 giorni, più giocatori).

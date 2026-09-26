@@ -74,21 +74,25 @@ KILLS_MANY = 20
 
 
 def format_duration(seconds: int) -> str:
+    """Secondi → 'm:ss' oppure 'h:mm:ss' (es. 2301 → '38:21')."""
     h, rem = divmod(max(int(seconds), 0), 3600)
     m, s = divmod(rem, 60)
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 
 def format_hours(seconds: int) -> str:
+    """Secondi → durata lunga leggibile (es. 6780 → '1h 53m', 1500 → '25m')."""
     h, rem = divmod(max(int(seconds), 0), 3600)
     return f"{h}h {rem // 60:02d}m" if h else f"{rem // 60}m"
 
 
 def format_date(d: date) -> str:
+    """Data in italiano con il giorno della settimana (es. 'venerdì 25 settembre')."""
     return f"{WEEKDAYS[d.weekday()]} {d.day} {MONTHS[d.month - 1]}"
 
 
 def mode_name(game_mode: int | None, lobby_type: int | None) -> str:
+    """Nome leggibile della modalità: 'Turbo', 'Classificata · All Pick', 'Battle Cup · Captains Mode'…"""
     mode = GAME_MODES.get(game_mode or 0, f"Modalità {game_mode}")
     lobby = LOBBY_TYPES.get(lobby_type) if lobby_type is not None else None
     if not lobby or lobby in ("Normale", mode):
@@ -97,6 +101,7 @@ def mode_name(game_mode: int | None, lobby_type: int | None) -> str:
 
 
 def match_links(match_id: int) -> str:
+    """Link HTML alla partita su Dotabuff e OpenDota."""
     return (
         f'<a href="https://www.dotabuff.com/matches/{match_id}">Dotabuff</a> · '
         f'<a href="https://www.opendota.com/matches/{match_id}">OpenDota</a>'
@@ -146,6 +151,11 @@ def highlights(match: dict[str, Any]) -> list[str]:
 def format_match(
     match: dict[str, Any], hero_name: str, display_name: str, streak: int = 0, previous_streak: int = 0
 ) -> str:
+    """Scheda di una partita per il canale (HTML).
+
+    `streak` è la serie in corso *dopo* questa partita (positiva = vittorie, negativa = sconfitte),
+    `previous_streak` quella prima: serve per il messaggio "maledizione spezzata".
+    """
     win = is_win(match)
     side = "Radiant" if is_radiant(int(match.get("player_slot") or 0)) else "Dire"
     header = result_header(win, streak)
@@ -170,6 +180,7 @@ def format_match(
 
 
 def format_summary(title: str, summary: Summary | None, heroes: dict[int, str], display_name: str) -> str:
+    """Riepilogo di un periodo (HTML). Con `summary=None` dice che non ci sono partite."""
     head = f"📊 <b>{escape(title)}</b> – {escape(display_name)}"
     if summary is None:
         return f"{head}\n\nNessuna partita giocata in questo periodo. 😴"

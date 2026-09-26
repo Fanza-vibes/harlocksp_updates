@@ -1,9 +1,11 @@
+# Il bot: ogni giro controlla le partite nuove, le curiosità, i comandi privati e il riepilogo
+# delle 23, poi salva state.json nel repository. Vedi "Per sviluppatori" nel README.
 name: Controllo partite
 
 on:
   schedule:
     - cron: "*/5 * * * *" # minimo consentito da GitHub; può ritardare di qualche minuto
-  workflow_dispatch:
+  workflow_dispatch: # avvio manuale da Actions (o da una sveglia esterna tramite l'API di GitHub)
 
 # Un solo giro alla volta: evita invii doppi e conflitti su state.json
 concurrency:
@@ -11,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: write # serve per il commit di state.json
 
 jobs:
   check:
@@ -28,6 +30,8 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Controlla e invia
+        # limite sul passo (non sul job): se scade, il salvataggio di state.json gira comunque
+        timeout-minutes: 6
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -36,6 +40,8 @@ jobs:
       # Anche se un invio fallisce, salva il progresso fatto fin lì
       - name: Salva state.json se cambiato
         if: always()
+        # commit solo se il file è cambiato; [skip ci] evita di avviare i test per questo commit.
+        # pull --rebase gestisce il caso raro in cui main sia cambiato durante il giro.
         run: |
           if git diff --quiet -- state.json; then
             echo "state.json invariato"
