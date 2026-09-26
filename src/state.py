@@ -151,7 +151,7 @@ def _positive_int(data: dict, key: str, path: Path) -> int | None:
     value = data.get(key)
     if value is None:
         return None
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+    if not _is_pos_int(value):
         log.warning("%s: %s non valido (%r), ignorato", path, key, value)
         return None
     return value

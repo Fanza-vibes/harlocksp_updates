@@ -1,5 +1,5 @@
 # Il bot: ogni giro controlla le partite nuove, le curiosità, i comandi privati e il riepilogo
-# delle 23, poi salva state.json nel repository. Vedi "Per sviluppatori" nel README.
+# delle 23, poi salva state.json nel repository. Dettagli tecnici in CLAUDE.md.
 name: Controllo partite
 
 on:
