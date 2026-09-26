@@ -2,7 +2,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from src.data import MatchData
-from src.followup import TRIVIA_MAX_AGE, TRIVIA_PER_ROUND, send_pending_trivia, trivia_text
+from src.followup import TRIVIA_MAX_AGE, TRIVIA_PER_ROUND, send_pending_trivia, trivia_message
 from src.opendota import OpenDotaError
 from src.state import Pending, State
 from src.telegram import TelegramError
@@ -117,9 +117,10 @@ def test_nothing_notable_is_dropped_without_message():
     assert sender.sent == [] and state.pending_trivia == []
 
 
-def test_trivia_text_player_missing_and_hero_keys_down():
+def test_trivia_message_player_missing_and_hero_keys_down():
     client = FakeOpenDota(fail_keys=True)
     _, data = setup([], client)
-    assert trivia_text(parsed_match(), 42, client, data) is None
-    text = trivia_text(parsed_match(), PLAYER_ID, client, data)
+    assert trivia_message(parsed_match(), 42, client, data) is None
+    text, kinds = trivia_message(parsed_match(), PLAYER_ID, client, data)
     assert "Pudge" in text  # nome ricavato da "npc_dota_hero_pudge" anche senza /heroes
+    assert kinds == ["giocate_speciali"]  # la partita di prova ha un ULTRA KILL

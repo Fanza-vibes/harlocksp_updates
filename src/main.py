@@ -15,17 +15,27 @@ import argparse
 import logging
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Protocol
 from zoneinfo import ZoneInfo
 
 from .commands import Bot, ensure_bot_commands, process_updates, reply_for
 from .config import Config, ConfigError, load_config
 from .data import MatchData, OpenDotaAPI
-from .followup import TriviaAPI, send_pending_trivia, trivia_text
+from .followup import TriviaAPI, send_pending_trivia, trivia_message
 from .formatter import format_date, format_match, format_summary
+from .media import DAILY_SUMMARY, match_kinds, send_with_media
 from .opendota import OpenDotaClient, OpenDotaError
 from .state import Pending, State, load_state, save_state
-from .stats import chronological, daily_window, streak_before, streak_until, summarize, summary_target
+from .stats import (
+    chronological,
+    daily_window,
+    is_win,
+    streak_before,
+    streak_until,
+    summarize,
+    summary_target,
+)
 from .telegram import DryRunSender, Sender, TelegramClient, TelegramError
 from .trivia import is_parsed
 
@@ -47,7 +57,14 @@ def select_new_matches(matches: list[dict], last_match_id: int) -> list[dict]:
 
 
 def notify_new_matches(
-    state: State, data: MatchData, sender: Sender, config: Config, save, dry_run: bool, last: int
+    state: State,
+    data: MatchData,
+    sender: Sender,
+    config: Config,
+    save,
+    dry_run: bool,
+    last: int,
+    media_root: Path | None = None,
 ) -> int:
     """Pubblica nel canale le partite nuove, in ordine cronologico.
 
@@ -82,7 +99,8 @@ def notify_new_matches(
         hero = data.hero_name(match.get("hero_id"))
         text = format_match(match, hero, config.display_name, streak, previous)
         try:
-            message_id = sender.send_message(text)
+            kinds = match_kinds(is_win(match), streak, previous)
+            message_id = send_with_media(sender, text, kinds, media_root)
         except TelegramError as exc:
             # lo stato su disco è già aggiornato all'ultima partita inviata con successo
             log.error("Invio della partita %s fallito: %s", match["match_id"], exc)
@@ -95,7 +113,14 @@ def notify_new_matches(
     return EXIT_OK
 
 
-def send_daily_summary(state: State, data: MatchData, sender: Sender, config: Config, now: datetime) -> int:
+def send_daily_summary(
+    state: State,
+    data: MatchData,
+    sender: Sender,
+    config: Config,
+    now: datetime,
+    media_root: Path | None = None,
+) -> int:
     """Riepilogo nel canale una volta al giorno dopo l'ora configurata, solo se ha giocato."""
     hour = config.daily_summary_hour
     if hour is None:
@@ -118,7 +143,7 @@ def send_daily_summary(state: State, data: MatchData, sender: Sender, config: Co
         title = f"Riepilogo di {format_date(target)}"
         text = format_summary(title, summarize(matches), heroes, config.display_name)
         try:
-            sender.send_message(text)
+            send_with_media(sender, text, [DAILY_SUMMARY], media_root)
         except TelegramError as exc:
             log.error("Invio del riepilogo giornaliero fallito: %s", exc)
             return EXIT_SEND_FAILED
@@ -141,6 +166,7 @@ def run(
     command: str | None = None,
     trivia_match: int | None = None,
     now: datetime | None = None,
+    media_root: Path | None = None,
 ) -> int:
     """Esegue un giro completo del bot e restituisce l'exit code.
 
@@ -168,17 +194,17 @@ def run(
     if trivia_match is not None:  # prova locale delle curiosità su una partita vera
         return preview_trivia(trivia_match, client, sender, config, data)
 
-    rc = notify_new_matches(state, data, sender, config, save, dry_run, last)
+    rc = notify_new_matches(state, data, sender, config, save, dry_run, last, media_root)
     if rc != EXIT_OK:
         return rc
     if not dry_run:  # la coda delle curiosità chiede analisi a OpenDota: niente effetti in prova
-        send_pending_trivia(state, client, sender, config.player_id, data, now)
+        send_pending_trivia(state, client, sender, config.player_id, data, now, media_root)
         save()
     if bot is not None:
         ensure_bot_commands(bot, state)
         process_updates(bot, state, data, config.display_name, now)
         save()  # l'offset va salvato subito: evita risposte doppie se il seguito fallisce
-    rc = send_daily_summary(state, data, sender, config, now)
+    rc = send_daily_summary(state, data, sender, config, now, media_root)
     save()
     return rc
 
@@ -192,8 +218,11 @@ def preview_trivia(match_id: int, client: TriviaAPI, sender: Sender, config: Con
         return EXIT_OK
     if not is_parsed(match):
         log.warning("Replay non ancora analizzato da OpenDota: le curiosità saranno parziali")
-    text = trivia_text(match, config.player_id, client, data)
-    sender.send_message(text or "Nessuna curiosità notevole per questa partita.", reply_to=match_id)
+    message = trivia_message(match, config.player_id, client, data)
+    if message is None:
+        sender.send_message("Nessuna curiosità notevole per questa partita.", reply_to=match_id)
+    else:
+        send_with_media(sender, message[0], message[1], reply_to=match_id)
     return EXIT_OK
 
 

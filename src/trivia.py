@@ -16,6 +16,7 @@ from html import escape
 from typing import Any
 
 from .formatter import format_duration
+from .media import SPECIAL_PLAY
 from .stats import is_radiant
 
 Match = dict[str, Any]
@@ -62,6 +63,7 @@ class Fact:
 
     score: float
     text: str
+    media: str | None = None  # cartella di media/ da usare se la curiosità viene pubblicata
 
 
 def is_parsed(match: Match) -> bool:
@@ -97,6 +99,11 @@ def facts(match: Match, player: Player, hero_name: str, hero_keys: dict[str, str
 def pick(candidates: list[Fact], limit: int = MAX_FACTS) -> list[Fact]:
     """Le `limit` curiosità con il punteggio più alto, dalla più notevole."""
     return sorted(candidates, key=lambda f: -f.score)[:limit]
+
+
+def media_kinds(chosen: list[Fact]) -> list[str]:
+    """Cartelle media richieste dalle curiosità scelte (vuota = solo testo)."""
+    return [f.media for f in chosen if f.media]
 
 
 def format_trivia(hero_name: str, chosen: list[Fact]) -> str:
@@ -154,7 +161,8 @@ def _multi_kill(player: Player) -> Fact | None:
     size, n = top
     name, score = MULTI_KILLS[min(size, 5)]
     times = f" (x{n})" if n > 1 else ""
-    return Fact(score + 5 * (n - 1), f"🔥 <b>{name}!</b>{times}")
+    media = SPECIAL_PLAY if size >= 4 else None  # ULTRA KILL e RAMPAGE
+    return Fact(score + 5 * (n - 1), f"🔥 <b>{name}!</b>{times}", media)
 
 
 def _kill_streak(player: Player) -> Fact | None:

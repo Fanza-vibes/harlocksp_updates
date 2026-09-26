@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Protocol
 
 from .data import MatchData
+from .media import send_with_media
 from .opendota import OpenDotaError
 from .state import Pending, State
 from .telegram import Sender, TelegramError
-from .trivia import facts, find_player, format_trivia, is_parsed, pick
+from .trivia import facts, find_player, format_trivia, is_parsed, media_kinds, pick
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +33,10 @@ class TriviaAPI(Protocol):
     def hero_keys(self) -> dict[str, str]: ...
 
 
-def trivia_text(match: dict[str, Any], player_id: int, client: TriviaAPI, data: MatchData) -> str | None:
-    """Testo delle curiosità, oppure None se il giocatore non c'è o non c'è niente di notevole."""
+def trivia_message(
+    match: dict[str, Any], player_id: int, client: TriviaAPI, data: MatchData
+) -> tuple[str, list[str]] | None:
+    """Testo delle curiosità e cartelle media da usare; None se non c'è niente di notevole."""
     player = find_player(match, player_id)
     if player is None:
         return None
@@ -42,11 +46,17 @@ def trivia_text(match: dict[str, Any], player_id: int, client: TriviaAPI, data: 
     except OpenDotaError:
         hero_keys = {}  # nomi ricavati dal nome interno ("npc_dota_hero_pudge" → "Pudge")
     chosen = pick(facts(match, player, hero_name, hero_keys))
-    return format_trivia(hero_name, chosen) if chosen else None
+    return (format_trivia(hero_name, chosen), media_kinds(chosen)) if chosen else None
 
 
 def send_pending_trivia(
-    state: State, client: TriviaAPI, sender: Sender, player_id: int, data: MatchData, now: datetime
+    state: State,
+    client: TriviaAPI,
+    sender: Sender,
+    player_id: int,
+    data: MatchData,
+    now: datetime,
+    media_root: Path | None = None,
 ) -> None:
     """Controlla le partite in attesa e pubblica le curiosità pronte. Gli errori non sono mai fatali."""
     now_ts = int(now.timestamp())
@@ -60,12 +70,14 @@ def send_pending_trivia(
             keep.append(item)
             continue
         checked += 1
-        if not _process(item, client, sender, player_id, data):
+        if not _process(item, client, sender, player_id, data, media_root):
             keep.append(item)
     state.pending_trivia = keep
 
 
-def _process(item: Pending, client: TriviaAPI, sender: Sender, player_id: int, data: MatchData) -> bool:
+def _process(
+    item: Pending, client: TriviaAPI, sender: Sender, player_id: int, data: MatchData, media_root: Path | None
+) -> bool:
     """True se la partita è conclusa (curiosità inviate o niente da dire), False se va ricontrollata."""
     try:
         match = client.match(item.match_id)
@@ -79,12 +91,13 @@ def _process(item: Pending, client: TriviaAPI, sender: Sender, player_id: int, d
         log.warning("Curiosità della partita %s rimandate: %s", item.match_id, exc)
         return False
 
-    text = trivia_text(match, player_id, client, data)
-    if text is None:
+    message = trivia_message(match, player_id, client, data)
+    if message is None:
         log.info("Curiosità della partita %s: niente di notevole", item.match_id)
         return True
+    text, kinds = message
     try:
-        sender.send_message(text, reply_to=item.message_id)
+        send_with_media(sender, text, kinds, media_root, reply_to=item.message_id)
     except TelegramError as exc:
         log.warning("Invio delle curiosità della partita %s fallito: %s", item.match_id, exc)
         return False
