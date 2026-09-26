@@ -152,6 +152,11 @@ def save_state(path: str | Path, state: State) -> None:
     """Scrittura atomica: file temporaneo nella stessa cartella + os.replace."""
     path = Path(path)
     text = json.dumps(state.to_dict(), indent=2, ensure_ascii=False) + "\n"
+    try:
+        if path.read_text(encoding="utf-8") == text:
+            return  # niente da scrivere
+    except OSError:
+        pass
     fd, tmp = tempfile.mkstemp(dir=path.parent or ".", prefix=".state-", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:

@@ -70,3 +70,15 @@ def test_pending_trivia_roundtrip_limit_and_validation(tmp_path):
         json.dumps({"pending_trivia": [{"match_id": 1}, "x", {"match_id": 2, "message_id": 3, "since": 4}]})
     )
     assert load_state(p).pending_trivia == [Pending(2, 3, 4)]
+
+
+def test_save_skips_identical_content(tmp_path):
+    import os
+
+    p = tmp_path / "s.json"
+    save_state(p, State(last_match_id=1))
+    os.utime(p, (1, 1))
+    save_state(p, State(last_match_id=1))
+    assert p.stat().st_mtime == 1  # non riscritto
+    save_state(p, State(last_match_id=2))
+    assert p.stat().st_mtime != 1
