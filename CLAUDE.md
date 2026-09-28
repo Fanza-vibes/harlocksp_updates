@@ -6,7 +6,8 @@ Costo zero: GitHub Actions (cron ogni 5 min, il minimo di GitHub) + API OpenDota
 ## Architettura
 
 ```
-check.yml (cron 5 min) → python -m src.main — un giro:
+check.yml (cron 5 min) → scripts/state_branch.sh load → python -m src.main → state_branch.sh save
+Un giro:
   1. recentMatches (UNA chiamata) → nuove partite nel canale (+ in coda per le curiosità)
   2. partite in coda: /matches/{id}; se non analizzata → POST /request/{id} (una volta);
      se analizzata → curiosità in risposta alla scheda; max 3 per giro, rinuncia dopo 3 ore
@@ -32,6 +33,10 @@ check.yml (cron 5 min) → python -m src.main — un giro:
 ```
 
 Regole di comportamento:
+- Stato su un branch dedicato `bot-state` (solo `state.json`, commit del bot); `main` contiene solo
+  codice e riceve modifiche solo via PR. `load`: se il branch non esiste usa lo `state.json` di main
+  (migrazione). `save` gira solo se `load` è riuscito (mai salvare uno stato vecchio). Lo
+  `state.json` su main serve solo alla migrazione e alle prove in locale.
 - Stato assente o corrotto → primo avvio: salva l'ultima partita e **non invia nulla**.
 - Nuove partite = `match_id > last_match_id`, inviate in ordine di `start_time`.
 - Lo stato si salva dopo **ogni** invio riuscito, così un errore a metà non genera doppioni.
@@ -64,6 +69,7 @@ mypy src                                   # tipi
 python -m src.main --dry-run --last 3      # stampa, non invia, non scrive state.json
 python -m src.main --dry-run --comando "/riepilogo oggi"   # prova un comando
 python -m src.main --dry-run --partita <match_id>           # curiosità di una partita vera
+git show origin/bot-state:state.json > state.json           # stato reale per le prove locali
 ```
 
 ## Convenzioni

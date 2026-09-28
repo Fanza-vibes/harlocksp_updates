@@ -59,7 +59,8 @@ nickname degli altri giocatori né la chat di gioco.
 
 Il bot è un programma Python che, a intervalli regolari, legge i dati pubblici delle partite da
 [OpenDota](https://www.opendota.com/), pubblica i messaggi su Telegram e si ricorda l'ultima partita
-già pubblicata nel file `state.json`. Non serve un server: gira gratuitamente su GitHub Actions.
+già pubblicata nel file `state.json`, salvato su un branch dedicato (`bot-state`) separato dal codice.
+Non serve un server: gira gratuitamente su GitHub Actions.
 
 ## Sviluppo
 

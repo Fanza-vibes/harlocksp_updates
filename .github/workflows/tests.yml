@@ -26,6 +26,7 @@ jobs:
         run: |
           ruff check src tests
           ruff format --check src tests
+          shellcheck scripts/*.sh
       - name: Tipi
         run: mypy src
       - run: python -m pytest
