@@ -179,6 +179,14 @@ def format_match(
     return "\n".join(lines)
 
 
+def format_rest_day(title: str, display_name: str) -> str:
+    """Riepilogo di una giornata senza partite (HTML)."""
+    return (
+        f"😴 <b>{escape(title)}</b> – {escape(display_name)}\n\n"
+        "💤 Il maestro oggi era troppo stanco e non ha giocato!"
+    )
+
+
 def format_summary(title: str, summary: Summary | None, heroes: dict[int, str], display_name: str) -> str:
     """Riepilogo di un periodo (HTML). Con `summary=None` dice che non ci sono partite."""
     head = f"📊 <b>{escape(title)}</b> – {escape(display_name)}"

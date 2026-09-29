@@ -4,6 +4,7 @@ from src.formatter import (
     format_date,
     format_duration,
     format_match,
+    format_rest_day,
     format_summary,
     highlights,
     is_radiant,
@@ -144,6 +145,12 @@ def test_format_summary():
     assert "• Anti-Mage: 2 partite (1V)" in text and "• Axe: 1 partita (1V)" in text
     assert "Miglior partita</b>: Axe 15/1/9" in text
     assert "1h 35m" in text
+
+
+def test_format_rest_day():
+    text = format_rest_day("Riepilogo di venerdì 25 settembre", "<H>")
+    assert "Il maestro oggi era troppo stanco e non ha giocato!" in text
+    assert "venerdì 25 settembre" in text and "&lt;H&gt;" in text
 
 
 def test_format_summary_empty():

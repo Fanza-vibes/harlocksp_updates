@@ -3,7 +3,7 @@
 1. nuove partite → scheda nel canale
 2. replay analizzati → curiosità in risposta alla scheda
 3. messaggi privati al bot → risposte ai comandi
-4. dopo le 23 (ora italiana) → riepilogo giornaliero nel canale, se ha giocato
+4. dopo le 23 (ora italiana) → riepilogo giornaliero nel canale (o messaggio di riposo)
 
 Uso: python -m src.main [--dry-run] [--last N] [--comando "/riepilogo oggi"] [--partita ID]
                         [--config config.yaml] [--state state.json]
@@ -23,8 +23,8 @@ from .commands import Bot, ensure_bot_commands, process_updates, reply_for
 from .config import Config, ConfigError, load_config
 from .data import MatchData, OpenDotaAPI
 from .followup import TriviaAPI, send_pending_trivia, trivia_message
-from .formatter import format_date, format_match, format_summary
-from .media import DAILY_SUMMARY, match_kinds, send_with_media
+from .formatter import format_date, format_match, format_rest_day, format_summary
+from .media import DAILY_SUMMARY, REST_DAY, match_kinds, send_with_media
 from .opendota import OpenDotaClient, OpenDotaError
 from .state import Pending, State, load_state, save_state
 from .stats import (
@@ -121,7 +121,10 @@ def send_daily_summary(
     now: datetime,
     media_root: Path | None = None,
 ) -> int:
-    """Riepilogo nel canale una volta al giorno dopo l'ora configurata, solo se ha giocato."""
+    """Riepilogo nel canale una volta al giorno dopo l'ora configurata.
+
+    Se quel giorno non ha giocato si invia il messaggio del giorno di riposo (cartella `riposo/`).
+    """
     hour = config.daily_summary_hour
     if hour is None:
         return EXIT_OK
@@ -138,18 +141,20 @@ def send_daily_summary(
     except OpenDotaError as exc:
         log.warning("Riepilogo giornaliero rimandato: %s", exc)
         return EXIT_OK
+    title = f"Riepilogo di {format_date(target)}"
     if matches:
         heroes = data.heroes({m.get("hero_id") or 0 for m in matches})
-        title = f"Riepilogo di {format_date(target)}"
         text = format_summary(title, summarize(matches), heroes, config.display_name)
-        try:
-            send_with_media(sender, text, [DAILY_SUMMARY], media_root)
-        except TelegramError as exc:
-            log.error("Invio del riepilogo giornaliero fallito: %s", exc)
-            return EXIT_SEND_FAILED
-        log.info("Inviato il riepilogo di %s (%d partite)", target, len(matches))
+        kinds = [DAILY_SUMMARY]
     else:
-        log.info("Nessuna partita il %s: niente riepilogo", target)
+        text = format_rest_day(title, config.display_name)
+        kinds = [REST_DAY]
+    try:
+        send_with_media(sender, text, kinds, media_root)
+    except TelegramError as exc:
+        log.error("Invio del riepilogo giornaliero fallito: %s", exc)
+        return EXIT_SEND_FAILED
+    log.info("Inviato il riepilogo di %s (%d partite)", target, len(matches))
     state.last_summary_date = target.isoformat()
     return EXIT_OK
 

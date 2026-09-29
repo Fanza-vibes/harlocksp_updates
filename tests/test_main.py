@@ -203,12 +203,17 @@ def test_daily_summary_not_before_hour(state_path):
     assert sender.sent == []
 
 
-def test_daily_summary_skipped_when_no_games(state_path):
+def test_daily_summary_rest_day_when_no_games(state_path):
     save_state(state_path, State(last_match_id=10, last_summary_date="2026-09-24"))
     sender = FakeSender()
     ms = [make_match(10, start_time=ts(2026, 9, 20, 15))]
-    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 25, 23, 5, tzinfo=ROME))
-    assert sender.sent == [] and load_state(state_path).last_summary_date == "2026-09-25"
+    late = datetime(2026, 9, 25, 23, 5, tzinfo=ROME)
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=late)
+    assert len(sender.sent) == 1
+    assert "troppo stanco e non ha giocato" in sender.sent[0] and "25 settembre" in sender.sent[0]
+    assert load_state(state_path).last_summary_date == "2026-09-25"
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=late + timedelta(minutes=15))
+    assert len(sender.sent) == 1  # non si ripete
 
 
 def test_daily_summary_late_cron_after_midnight(state_path):
@@ -399,3 +404,15 @@ def test_daily_summary_uses_media_folder(state_path, empty_media_dir):
     sender = MediaSender()
     run(CONFIG, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 25, 23, 5, tzinfo=ROME))
     assert sender.media == [("riepilogo", "sera.png")]
+
+
+def test_rest_day_uses_its_media_folder(state_path, empty_media_dir):
+    for kind in ("riposo", "riepilogo"):
+        (empty_media_dir / kind).mkdir()
+        (empty_media_dir / kind / f"{kind}.png").write_bytes(b"x")
+    save_state(state_path, State(last_match_id=10, last_summary_date="2026-09-24"))
+    ms = [make_match(10, start_time=ts(2026, 9, 20, 15))]
+    sender = MediaSender()
+    run(CONFIG, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 25, 23, 5, tzinfo=ROME))
+    assert sender.media == [("riposo", "riposo.png")]
+    assert "troppo stanco" in sender.sent[0]

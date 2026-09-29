@@ -30,7 +30,8 @@ LOSS_STREAK = "serie_sconfitte"
 CURSE_BROKEN = "maledizione_spezzata"
 SPECIAL_PLAY = "giocate_speciali"
 DAILY_SUMMARY = "riepilogo"
-ALL_KINDS = (VICTORY, DEFEAT, WIN_STREAK, LOSS_STREAK, CURSE_BROKEN, SPECIAL_PLAY, DAILY_SUMMARY)
+REST_DAY = "riposo"
+ALL_KINDS = (VICTORY, DEFEAT, WIN_STREAK, LOSS_STREAK, CURSE_BROKEN, SPECIAL_PLAY, DAILY_SUMMARY, REST_DAY)
 
 
 def match_kinds(win: bool, streak: int, previous_streak: int = 0) -> list[str]:

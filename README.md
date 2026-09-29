@@ -14,10 +14,11 @@ Progetto per divertimento, senza scopo commerciale e a costo zero.
 - 🔍 **Curiosità della partita**: dopo qualche minuto arriva, in risposta alla scheda, un secondo
   messaggio con le chicche più notevoli: nemesi, vittima preferita, multi-kill, first blood,
   rimonte, confronti con gli altri giocatori dello stesso eroe.
-- 📊 **Riepilogo della giornata** alle 23, nei giorni in cui ha giocato.
+- 📊 **Riepilogo della giornata** alle 23; nei giorni senza partite arriva il messaggio di riposo
+  ("Il maestro oggi era troppo stanco e non ha giocato!").
 - 💬 **Comandi in chat privata** con il bot, per chiedere un riepilogo quando si vuole.
 - 🖼 **Immagini e GIF** a scelta, allegate ai messaggi del canale (vittoria, sconfitta, serie di
-  fila, giocate speciali, riepilogo): si caricano nelle cartelle di [`media/`](media/LEGGIMI.md).
+  fila, giocate speciali, riepilogo, giorno di riposo): si caricano nelle cartelle di [`media/`](media/LEGGIMI.md).
 
 Esempi:
 
