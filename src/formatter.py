@@ -69,8 +69,8 @@ MONTHS = [
 STREAK_MIN = 3  # vittorie di fila da festeggiare
 LOSS_STREAK_MIN = 2  # sconfitte di fila da sottolineare
 CURSE_BROKEN_MIN = 3  # vittoria che interrompe almeno N sconfitte di fila
-KDA_STELLAR = 10.0
-KILLS_MANY = 20
+KDA_STELLAR = 10.0  # KDA da cui la partita ha la 🌟 "KDA stellare"
+KILLS_MANY = 20  # kill da cui la partita ha la 🌟 "Massacro"
 
 
 def format_duration(seconds: int) -> str:

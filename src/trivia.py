@@ -22,18 +22,19 @@ from .stats import is_radiant
 Match = dict[str, Any]
 Player = dict[str, Any]
 
-MAX_FACTS = 5
-HERO_PREFIX = "npc_dota_hero_"
+MAX_FACTS = 5  # curiosità pubblicate al massimo per partita
+HERO_PREFIX = "npc_dota_hero_"  # prefisso dei nomi interni degli eroi (i creep ne hanno altri)
 
-NEMESIS_MIN = 2
-VICTIM_MIN = 3
-STREAK_MIN = 5
-COMEBACK_GOLD = 8_000
-THROW_GOLD = 10_000
-PCT_HIGH = 0.85
-PCT_LOW = 0.10
-TEAM_DAMAGE_SHARE = 0.35
-DEAD_SECONDS = 300
+# Soglie oltre le quali un dato diventa una curiosità
+NEMESIS_MIN = 2  # volte ucciso dallo stesso eroe
+VICTIM_MIN = 3  # volte che ha ucciso lo stesso eroe
+STREAK_MIN = 5  # kill di fila senza morire (Mega Kill)
+COMEBACK_GOLD = 8_000  # svantaggio d'oro massimo recuperato in una vittoria
+THROW_GOLD = 10_000  # vantaggio d'oro massimo sprecato in una sconfitta
+PCT_HIGH = 0.85  # percentile rispetto agli altri giocatori dello stesso eroe: "migliore dell'85%"
+PCT_LOW = 0.10  # percentile basso, per la curiosità ironica
+TEAM_DAMAGE_SHARE = 0.35  # quota dei danni agli eroi della sua squadra
+DEAD_SECONDS = 300  # tempo passato da morto
 
 MULTI_KILLS = {3: ("TRIPLE KILL", 70), 4: ("ULTRA KILL", 90), 5: ("RAMPAGE", 120)}
 KILL_STREAKS = {
@@ -194,6 +195,7 @@ def _first_blood(match: Match, player: Player) -> Fact | None:
 
 
 def _first_blood_victim_slot(match: Match, fb: dict[str, Any]) -> int | None:
+    """player_slot di chi ha subito il first blood (i replay analizzati usano due formati)."""
     if _is_int(fb.get("victim_player_slot")):
         return fb["victim_player_slot"]
     # formato grezzo: `key` è l'indice della vittima nella lista dei giocatori
@@ -221,6 +223,7 @@ def _comeback_or_throw(match: Match, player: Player) -> Fact | None:
 
 
 def _benchmarks(player: Player) -> list[tuple[str, float]]:
+    """[(metrica, percentile 0-1)] per le metriche di BENCHMARKS presenti e valide."""
     bench = player.get("benchmarks")
     if not isinstance(bench, dict):
         return []
@@ -287,6 +290,7 @@ def _time_dead(player: Player, duration: int) -> Fact | None:
 
 
 def _gold(n: float) -> str:
+    """Oro con il punto delle migliaia all'italiana (12500 → '12.500')."""
     return f"{round(n):,}".replace(",", ".")
 
 

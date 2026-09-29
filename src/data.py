@@ -61,6 +61,7 @@ class MatchData:
         return chronological(in_window(source, start, end))
 
     def _recent_covers(self, start: datetime) -> bool:
+        """True se le 20 partite recenti contengono di sicuro tutte quelle successive a `start`."""
         if len(self.recent) < RECENT_LIMIT:
             return True  # meno di 20 partite in totale: le recenti sono tutto lo storico disponibile
         oldest = self.recent[0].get("start_time") or 0

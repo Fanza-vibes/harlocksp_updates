@@ -23,7 +23,11 @@ def is_win(match: Match) -> bool:
 
 def kda(match: Match) -> tuple[int, int, int]:
     """(kill, morti, assist) della partita, 0 se il dato manca."""
-    return tuple(int(match.get(x) or 0) for x in ("kills", "deaths", "assists"))  # type: ignore[return-value]
+    return (
+        int(match.get("kills") or 0),
+        int(match.get("deaths") or 0),
+        int(match.get("assists") or 0),
+    )
 
 
 def kda_ratio(match: Match) -> float:
