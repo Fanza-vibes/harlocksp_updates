@@ -31,7 +31,8 @@ Un giro:
                429 → TelegramError; DryRunSender
   state.py     state.json: last_match_id, cache eroi, telegram_offset, last_summary_date,
                commands_version, pending_trivia; lettura tollerante, scrittura atomica
-  config.py    config.yaml + TELEGRAM_TOKEN / TELEGRAM_CHAT_ID da env
+  config.py    config.yaml + TELEGRAM_TOKEN / TELEGRAM_CHAT_ID da env (canale privato: ID numerico
+               -100…, il "#" copiato da Telegram Web viene tolto)
 ```
 
 Regole di comportamento:

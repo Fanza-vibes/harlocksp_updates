@@ -17,6 +17,21 @@ def test_load_with_secrets(cfg_file):
     assert "SECRET" not in repr(c) and "SECRET" not in str(c)
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("@canale", "@canale"), ("-1001234567890", "-1001234567890"), (" #-1001234567890\n", "-1001234567890")],
+)
+def test_chat_id_normalized(cfg_file, raw, expected):
+    c = load_config(cfg_file, env={"TELEGRAM_TOKEN": "1:X", "TELEGRAM_CHAT_ID": raw})
+    assert c.telegram_chat_id == expected
+
+
+def test_chat_id_invalid_without_leaking_value(cfg_file):
+    with pytest.raises(ConfigError) as exc:
+        load_config(cfg_file, env={"TELEGRAM_TOKEN": "1:X", "TELEGRAM_CHAT_ID": "t.me/+segreto"})
+    assert "segreto" not in str(exc.value)
+
+
 def test_missing_secrets(cfg_file):
     with pytest.raises(ConfigError, match="TELEGRAM_TOKEN"):
         load_config(cfg_file, env={"TELEGRAM_CHAT_ID": "1"})

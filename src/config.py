@@ -58,7 +58,7 @@ def load_config(
         raise ConfigError(f"{path}: 'player_id' mancante o non numerico") from exc
 
     token = env.get("TELEGRAM_TOKEN") or None
-    chat_id = env.get("TELEGRAM_CHAT_ID") or None
+    chat_id = normalize_chat_id(env.get("TELEGRAM_CHAT_ID"))
     if require_secrets:
         missing = [n for n, v in (("TELEGRAM_TOKEN", token), ("TELEGRAM_CHAT_ID", chat_id)) if not v]
         if missing:
@@ -82,6 +82,21 @@ def load_config(
         telegram_token=token,
         telegram_chat_id=chat_id,
     )
+
+
+def normalize_chat_id(raw: str | None) -> str | None:
+    """Chat ID ripulito: '@nome' oppure un numero ('-100…' per i canali privati).
+
+    Toglie spazi e l'eventuale '#' iniziale copiato dall'indirizzo di Telegram Web
+    (web.telegram.org/a/#-100…). Un valore di altra forma è un errore di configurazione: il
+    messaggio non riporta il valore, perché i log sono pubblici.
+    """
+    value = (raw or "").strip().lstrip("#").strip()
+    if not value:
+        return None
+    if value.startswith("@") or value.lstrip("-").isdigit():
+        return value
+    raise ConfigError("TELEGRAM_CHAT_ID non valido: deve essere @nome_canale oppure un numero come -100…")
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
