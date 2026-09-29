@@ -4,8 +4,11 @@ name: Controllo partite
 
 on:
   schedule:
-    - cron: "*/5 * * * *" # minimo consentito da GitHub; può ritardare di qualche minuto
-  workflow_dispatch: # avvio manuale da Actions (o da una sveglia esterna tramite l'API di GitHub)
+    # Riserva: il motore principale è una sveglia esterna (cron-job.org) che ogni 5 minuti avvia
+    # questo workflow via API (workflow_dispatch). Il cron di GitHub è "best effort" e salta molti
+    # giri: resta solo come riserva oraria, al minuto 17 per evitare il picco di inizio ora.
+    - cron: "17 * * * *"
+  workflow_dispatch: # avvio manuale da Actions e dalla sveglia esterna (API di GitHub)
 
 # Un solo giro alla volta: evita invii doppi e conflitti su state.json
 concurrency:

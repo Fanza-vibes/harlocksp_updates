@@ -1,12 +1,14 @@
 # CLAUDE.md
 
 Bot Telegram che pubblica le partite Dota 2 di HarlockSP (account 295689331).
-Costo zero: GitHub Actions (cron ogni 5 min, il minimo di GitHub) + API OpenDota senza chiave.
+Costo zero: GitHub Actions avviato ogni 5 min da una sveglia esterna (cron-job.org → API workflow_dispatch),
+cron interno di GitHub come riserva oraria + API OpenDota senza chiave.
 
 ## Architettura
 
 ```
-check.yml (cron 5 min) → scripts/state_branch.sh load → python -m src.main → state_branch.sh save
+check.yml (cron-job.org ogni 5 min via workflow_dispatch; riserva: cron GitHub "17 * * * *")
+  → scripts/state_branch.sh load → python -m src.main → state_branch.sh save
 Un giro:
   1. recentMatches (UNA chiamata) → nuove partite nel canale (+ in coda per le curiosità)
   2. partite in coda: /matches/{id}; se non analizzata → POST /request/{id} (una volta);
@@ -87,4 +89,8 @@ git show origin/bot-state:state.json > state.json           # stato reale per le
   workflow committa solo se cambia; `save_state` non riscrive il file se il contenuto è identico.
 - Testi utente, log e commit in italiano; un commit per ogni step logico.
 - Progetto per divertimento, non commerciale: preferire soluzioni semplici a costo zero.
-- Roadmap: Fase 4 (keep-alive contro la disattivazione dei cron dopo 60 giorni, più giocatori).
+- Avvio: il cron di GitHub è best effort (salta giri, soprattutto a inizio ora); per questo il motore è
+  esterno. Token fine-grained solo `Actions: write` su questo repo, custodito su cron-job.org (mai nel
+  repo). Scadenza token 28/09/2027; `X-GitHub-Api-Version: 2022-11-28` dismessa il 10/03/2028.
+  La disattivazione dopo 60 giorni di inattività riguarda solo `schedule`, non gli avvii via API.
+- Roadmap: più giocatori.
