@@ -40,7 +40,8 @@ Esempi:
 
 ## Per gli amici
 
-1. Entrate nel canale **[t.me/harlocksp_updates](https://t.me/harlocksp_updates)**: si può solo leggere.
+1. Il canale è privato: chiedete a HarlockSP il link d'invito e aspettate l'approvazione. Nel canale
+   si può solo leggere.
 2. Per un riepilogo su richiesta aprite **@Harlocksp_updatesbot**, premete **Avvia** e scrivete:
 
 | Comando | Risposta |
