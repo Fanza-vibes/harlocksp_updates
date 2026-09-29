@@ -15,6 +15,7 @@ def test_load_with_secrets(cfg_file):
     assert c.player_id == 295689331 and c.display_name == "HarlockSP"
     assert not hasattr(c, "language")
     assert "SECRET" not in repr(c) and "SECRET" not in str(c)
+    assert "@canale" not in repr(c)  # anche il chat ID resta fuori dai log
 
 
 @pytest.mark.parametrize(
