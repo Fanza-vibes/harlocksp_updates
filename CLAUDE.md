@@ -84,7 +84,7 @@ git show origin/bot-state:state.json > state.json           # stato reale per le
 - Il README è documentazione generale (cosa fa, comandi, sviluppo in breve): niente istruzioni su
   segreti, token o configurazione di GitHub Actions. I dettagli tecnici stanno qui.
 - GitHub Actions alla major più recente (Node 24); Dependabot propone gli aggiornamenti ogni mese.
-- Dipendenze minime: solo `requests`, `PyYAML` e `tzdata` a runtime; `pytest`, `responses` e `ruff` per sviluppo e test.
+- Dipendenze minime: solo `requests`, `PyYAML` e `tzdata` a runtime; `pytest`, `responses`, `ruff`, `mypy` (+ stub `types-requests`, `types-PyYAML`) per sviluppo e test.
 - I test non fanno rete: usano `responses` oppure i fake in `tests/test_main.py`; `sleep` è iniettabile.
 - **Mai** loggare il token né l'URL di Telegram (contiene il token): nelle eccezioni usare `from None`.
 - `state.json` ha un formato deterministico (ordine fisso dei campi, eroi in ordine numerico) così il
