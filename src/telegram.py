@@ -58,8 +58,8 @@ class TelegramClient:
         self.api_url = api_url
 
     def __repr__(self) -> str:
-        """Rappresentazione per i log, senza token."""
-        return f"TelegramClient(chat_id={self.chat_id!r})"
+        """Rappresentazione per i log, senza token né chat ID."""
+        return "TelegramClient()"
 
     def send_message(
         self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
@@ -152,6 +152,7 @@ class DryRunSender:
     def send_message(
         self, text: str, chat_id: str | int | None = None, reply_to: int | None = None
     ) -> int | None:
+        """Stampa il messaggio con la destinazione; restituisce un message_id finto (progressivo)."""
         self.count += 1
         dest = "canale" if chat_id is None else f"chat {chat_id}"
         if reply_to is not None:
@@ -166,6 +167,7 @@ class DryRunSender:
 
 
 def _json_or_empty(resp: requests.Response) -> dict:
+    """Corpo JSON della risposta, oppure {} se non è JSON (es. pagina di errore di un proxy)."""
     try:
         data = resp.json()
     except ValueError:

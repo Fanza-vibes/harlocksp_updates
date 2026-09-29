@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -28,6 +29,7 @@ from .media import DAILY_SUMMARY, REST_DAY, match_kinds, send_with_media
 from .opendota import OpenDotaClient, OpenDotaError
 from .state import Pending, State, load_state, save_state
 from .stats import (
+    Match,
     chronological,
     daily_window,
     is_win,
@@ -51,7 +53,7 @@ EXIT_SEND_FAILED = 1
 EXIT_CONFIG = 2
 
 
-def select_new_matches(matches: list[dict], last_match_id: int) -> list[dict]:
+def select_new_matches(matches: list[Match], last_match_id: int) -> list[Match]:
     """Partite con match_id > last_match_id, in ordine cronologico."""
     return chronological([m for m in matches if m["match_id"] > last_match_id])
 
@@ -61,7 +63,7 @@ def notify_new_matches(
     data: MatchData,
     sender: Sender,
     config: Config,
-    save,
+    save: Callable[[], None],
     dry_run: bool,
     last: int,
     media_root: Path | None = None,
@@ -71,6 +73,7 @@ def notify_new_matches(
     Al primo avvio salva solo l'ultima partita senza inviare nulla. Lo stato viene salvato dopo ogni
     invio riuscito, così un errore a metà non provoca doppioni. Ogni scheda inviata entra nella coda
     delle curiosità. Restituisce EXIT_SEND_FAILED se Telegram rifiuta un invio.
+    `save` scrive lo stato su disco; `last` (solo con dry_run) mostra le ultime N partite già note.
     """
     if not data.recent:
         log.info("Nessuna partita restituita da OpenDota")

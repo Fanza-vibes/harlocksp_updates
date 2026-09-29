@@ -28,16 +28,17 @@ class Config:
     timezone: str = "Europe/Rome"
     daily_summary_hour: int | None = 23  # None = riepilogo giornaliero disattivato
     telegram_token: str | None = field(default=None, repr=False)
-    telegram_chat_id: str | None = None
+    telegram_chat_id: str | None = field(default=None, repr=False)
 
-    def __repr__(self) -> str:  # il token non deve mai finire nei log
-        """Rappresentazione per i log con il token mascherato."""
+    def __repr__(self) -> str:  # token e chat ID non devono mai finire nei log (pubblici)
+        """Rappresentazione per i log con token e chat ID mascherati."""
         token = "***" if self.telegram_token else None
+        chat_id = "***" if self.telegram_chat_id else None
         return (
             f"Config(player_id={self.player_id}, display_name={self.display_name!r}, "
             f"timezone={self.timezone!r}, "
             f"daily_summary_hour={self.daily_summary_hour!r}, telegram_token={token}, "
-            f"telegram_chat_id={self.telegram_chat_id!r})"
+            f"telegram_chat_id={chat_id})"
         )
 
     __str__ = __repr__
@@ -58,7 +59,7 @@ def load_config(
         raise ConfigError(f"{path}: 'player_id' mancante o non numerico") from exc
 
     token = env.get("TELEGRAM_TOKEN") or None
-    chat_id = env.get("TELEGRAM_CHAT_ID") or None
+    chat_id = normalize_chat_id(env.get("TELEGRAM_CHAT_ID"))
     if require_secrets:
         missing = [n for n, v in (("TELEGRAM_TOKEN", token), ("TELEGRAM_CHAT_ID", chat_id)) if not v]
         if missing:
@@ -84,7 +85,23 @@ def load_config(
     )
 
 
+def normalize_chat_id(raw: str | None) -> str | None:
+    """Chat ID ripulito: '@nome' oppure un numero ('-100…' per i canali privati).
+
+    Toglie spazi e l'eventuale '#' iniziale copiato dall'indirizzo di Telegram Web
+    (web.telegram.org/a/#-100…). Un valore di altra forma è un errore di configurazione: il
+    messaggio non riporta il valore, perché i log sono pubblici.
+    """
+    value = (raw or "").strip().lstrip("#").strip()
+    if not value:
+        return None
+    if value.startswith("@") or value.lstrip("-").isdigit():
+        return value
+    raise ConfigError("TELEGRAM_CHAT_ID non valido: deve essere @nome_canale oppure un numero come -100…")
+
+
 def _read_yaml(path: Path) -> dict[str, Any]:
+    """Contenuto di config.yaml come dizionario; ogni problema diventa ConfigError."""
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
