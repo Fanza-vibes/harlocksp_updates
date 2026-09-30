@@ -38,9 +38,9 @@ Un giro:
 
 Regole di comportamento:
 - Stato su un branch dedicato `bot-state` (solo `state.json`, commit del bot); `main` contiene solo
-  codice e riceve modifiche solo via PR. `load`: se il branch non esiste usa lo `state.json` di main
-  (migrazione). `save` gira solo se `load` è riuscito (mai salvare uno stato vecchio). Lo
-  `state.json` su main serve solo alla migrazione e alle prove in locale.
+  codice e riceve modifiche solo via PR. `load`: se il branch non esiste → nessuno stato = primo avvio
+  (nessun invio, mai doppioni). `save` gira solo se `load` è riuscito (mai salvare uno stato vecchio).
+  `state.json` non è su main (è in .gitignore): per le prove in locale si copia da `bot-state`.
 - Stato assente o corrotto → primo avvio: salva l'ultima partita e **non invia nulla**.
 - Nuove partite = `match_id > last_match_id`, inviate in ordine di `start_time`.
 - Lo stato si salva dopo **ogni** invio riuscito, così un errore a metà non genera doppioni.
