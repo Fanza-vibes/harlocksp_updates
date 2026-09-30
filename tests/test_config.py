@@ -74,6 +74,13 @@ def test_invalid_timezone_or_hour(cfg_file, extra):
         load_config(cfg_file, env={}, require_secrets=False)
 
 
+@pytest.mark.parametrize("value", ["60", "-1", "sera", "true"])
+def test_invalid_summary_delay(cfg_file, value):
+    cfg_file.write_text(cfg_file.read_text() + f"daily_summary_delay: {value}\n")
+    with pytest.raises(ConfigError):
+        load_config(cfg_file, env={}, require_secrets=False)
+
+
 def test_summary_can_be_disabled(cfg_file):
     cfg_file.write_text(cfg_file.read_text() + "daily_summary_hour: null\n")
     assert load_config(cfg_file, env={}, require_secrets=False).daily_summary_hour is None

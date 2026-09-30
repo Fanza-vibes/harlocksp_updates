@@ -242,6 +242,18 @@ def test_daily_summary_at_midnight(state_path):
     assert len(sender.sent) == 1  # non si ripete durante il giorno dopo
 
 
+def test_daily_summary_waits_for_delay(state_path):
+    # partita finita alle 23:55: OpenDota la registra alle 00:10, il riepilogo delle 00:15 la include
+    save_state(state_path, State(last_match_id=12, last_summary_date="2026-09-24"))
+    late_match = make_match(12, start_time=ts(2026, 9, 25, 23, 25), duration=1800)
+    cfg = Config(player_id=1, display_name="H", daily_summary_hour=24, daily_summary_delay=15)
+    sender = FakeSender()
+    run(cfg, state_path, FakeOpenDota([]), sender, now=datetime(2026, 9, 26, 0, 5, tzinfo=ROME))
+    assert sender.sent == []  # troppo presto: niente falso messaggio di riposo
+    run(cfg, state_path, FakeOpenDota([late_match]), sender, now=datetime(2026, 9, 26, 0, 15, tzinfo=ROME))
+    assert len(sender.sent) == 1 and "Partite: <b>1</b>" in sender.sent[0]
+
+
 def test_daily_summary_disabled(state_path):
     save_state(state_path, State(last_match_id=11, last_summary_date="2026-09-24"))
     sender = FakeSender()

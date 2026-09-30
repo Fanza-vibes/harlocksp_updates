@@ -27,6 +27,7 @@ class Config:
     display_name: str
     timezone: str = "Europe/Rome"
     daily_summary_hour: int | None = 23  # 1-24 (24 = mezzanotte); None = riepilogo disattivato
+    daily_summary_delay: int = 0  # minuti di attesa dopo la fine della giornata (0-59)
     telegram_token: str | None = field(default=None, repr=False)
     telegram_chat_id: str | None = field(default=None, repr=False)
 
@@ -37,7 +38,8 @@ class Config:
         return (
             f"Config(player_id={self.player_id}, display_name={self.display_name!r}, "
             f"timezone={self.timezone!r}, "
-            f"daily_summary_hour={self.daily_summary_hour!r}, telegram_token={token}, "
+            f"daily_summary_hour={self.daily_summary_hour!r}, "
+            f"daily_summary_delay={self.daily_summary_delay!r}, telegram_token={token}, "
             f"telegram_chat_id={chat_id})"
         )
 
@@ -77,11 +79,16 @@ def load_config(
             f"{path}: 'daily_summary_hour' deve essere un'ora tra 1 e 24 (24 = mezzanotte) oppure null"
         )
 
+    delay = data.get("daily_summary_delay", 0)
+    if isinstance(delay, bool) or not isinstance(delay, int) or not 0 <= delay <= 59:
+        raise ConfigError(f"{path}: 'daily_summary_delay' deve essere un numero di minuti tra 0 e 59")
+
     return Config(
         player_id=player_id,
         display_name=str(data.get("display_name") or player_id),
         timezone=timezone,
         daily_summary_hour=hour,
+        daily_summary_delay=delay,
         telegram_token=token,
         telegram_chat_id=chat_id,
     )

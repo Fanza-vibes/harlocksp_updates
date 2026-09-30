@@ -136,13 +136,15 @@ def window_end(day: date, hour: int, tz: tzinfo) -> datetime:
     return datetime.combine(day, time(0), tzinfo=tz) + timedelta(hours=hour)
 
 
-def summary_target(now: datetime, hour: int) -> date:
-    """Il giorno il cui riepilogo è 'dovuto' adesso: l'ultimo la cui giornata è già finita.
+def summary_target(now: datetime, hour: int, delay: timedelta = timedelta(0)) -> date:
+    """Il giorno il cui riepilogo è 'dovuto' adesso: l'ultimo finito da almeno `delay`.
 
-    Con hour=23: oggi dalle 23 in poi, altrimenti ieri. Con hour=24: sempre ieri.
+    Con hour=23: oggi dalle 23 in poi, altrimenti ieri. Con hour=24 e delay=15 min: dalle 00:15 il
+    giorno appena finito. Il ritardo lascia a OpenDota il tempo di registrare le ultime partite.
     """
-    today = now.date()
-    return today if now >= window_end(today, hour, now.tzinfo or UTC) else today - timedelta(days=1)
+    shifted = now - delay
+    today = shifted.date()
+    return today if shifted >= window_end(today, hour, now.tzinfo or UTC) else today - timedelta(days=1)
 
 
 def daily_window(day: date, hour: int, tz: tzinfo) -> tuple[datetime, datetime]:

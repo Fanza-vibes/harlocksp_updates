@@ -12,8 +12,8 @@ Se una cartella è vuota, il messaggio viene inviato come solo testo.
 | `serie_sconfitte/` | sconfitta con 3 o più sconfitte di fila (se vuota: `sconfitta/`) |
 | `maledizione_spezzata/` | vittoria dopo 3 o più sconfitte di fila (se vuota: `vittoria/`) |
 | `giocate_speciali/` | curiosità con ULTRA KILL o RAMPAGE |
-| `riepilogo/` | riepilogo della giornata, a mezzanotte |
-| `riposo/` | messaggio di mezzanotte nei giorni in cui il maestro non ha giocato |
+| `riepilogo/` | riepilogo della giornata, alle 00:15 |
+| `riposo/` | messaggio delle 00:15 nei giorni in cui il maestro non ha giocato |
 
 **Formati**: immagini `.jpg`, `.jpeg`, `.png`, `.webp` (fino a 10 MB); animazioni `.gif` o `.mp4`
 (fino a 50 MB, meglio file piccoli). Gli altri file vengono ignorati.

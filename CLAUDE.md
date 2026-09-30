@@ -14,8 +14,8 @@ Un giro:
   2. partite in coda: /matches/{id}; se non analizzata → POST /request/{id} (una volta);
      se analizzata → curiosità in risposta alla scheda; max 3 per giro, rinuncia dopo 3 ore
   3. getUpdates → risposte ai comandi in chat privata
-  4. dopo daily_summary_hour (Europe/Rome, 1-24; config: 24 = mezzanotte) → riepilogo del giorno nel canale
-     (o messaggio di riposo)
+  4. dopo daily_summary_hour + daily_summary_delay (Europe/Rome; config: 24 + 15 min = 00:15) → riepilogo
+     del giorno di calendario nel canale (o messaggio di riposo)
 
   main.py      orchestrazione del giro, CLI (--dry-run, --last, --comando, --partita)
   followup.py  coda delle curiosità (state.pending_trivia): richiesta analisi, invio in risposta
@@ -53,7 +53,8 @@ Regole di comportamento:
 - Comandi: solo chat private, max 3 risposte per chat per giro; l'offset avanza anche per i messaggi
   ignorati; se OpenDota è giù l'offset NON avanza (i comandi si evadono al giro dopo).
 - Riepilogo giornaliero: finestra [ora X del giorno prima, ora X) (X=24: il giorno di calendario), partite classificate per ora di
-  **fine**; recupera anche se il cron slitta dopo mezzanotte; se non ha giocato → messaggio di riposo
+  **fine**; invio `daily_summary_delay` minuti dopo la fine della finestra (OpenDota registra le partite in ritardo:
+  evita un falso messaggio di riposo); recupera anche se il cron slitta; se non ha giocato → messaggio di riposo
   (formatter.format_rest_day, cartella media `riposo/`).
 - Curiosità: campi OpenDota verificati su odota/core (svc/api/responses/MatchResponse.ts); partita
   analizzata ⇔ `version` non nullo; campo mancante = curiosità saltata, mai un errore. Solo nomi di
