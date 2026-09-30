@@ -92,7 +92,7 @@ def help_text(display_name: str) -> str:
             "⏳ Non sono sempre online: leggo i messaggi ogni 5 minuti circa, "
             "quindi la risposta può arrivare con qualche minuto di ritardo.",
             "",
-            "Gli aggiornamenti di ogni partita e il riepilogo delle 23 arrivano nel canale.",
+            "Gli aggiornamenti di ogni partita e il riepilogo di mezzanotte arrivano nel canale.",
         ]
     )
 

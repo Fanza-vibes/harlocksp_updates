@@ -225,6 +225,23 @@ def test_daily_summary_late_cron_after_midnight(state_path):
     assert len(sender.sent) == 1 and "25 settembre" in sender.sent[0]
 
 
+def test_daily_summary_at_midnight(state_path):
+    save_state(state_path, State(last_match_id=12, last_summary_date="2026-09-24"))
+    ms = [
+        make_match(11, start_time=ts(2026, 9, 25, 0, 5)),  # appena dopo mezzanotte: stesso giorno
+        make_match(12, start_time=ts(2026, 9, 25, 23, 20), duration=1800),  # finisce alle 23:50
+    ]
+    cfg = Config(player_id=1, display_name="H", daily_summary_hour=24)
+    sender = FakeSender()
+    run(cfg, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 25, 23, 55, tzinfo=ROME))
+    assert sender.sent == []  # la giornata non è ancora finita
+    run(cfg, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 26, 0, 5, tzinfo=ROME))
+    assert len(sender.sent) == 1
+    assert "Riepilogo di venerdì 25 settembre" in sender.sent[0] and "Partite: <b>2</b>" in sender.sent[0]
+    run(cfg, state_path, FakeOpenDota(ms), sender, now=datetime(2026, 9, 26, 12, 0, tzinfo=ROME))
+    assert len(sender.sent) == 1  # non si ripete durante il giorno dopo
+
+
 def test_daily_summary_disabled(state_path):
     save_state(state_path, State(last_match_id=11, last_summary_date="2026-09-24"))
     sender = FakeSender()

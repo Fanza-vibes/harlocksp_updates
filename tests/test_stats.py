@@ -46,6 +46,18 @@ def test_summary_target():
     assert summary_target(datetime(2026, 9, 25, 23, 0, tzinfo=ROME), 23) == date(2026, 9, 25)
 
 
+def test_summary_target_midnight():
+    # con 24 il riepilogo di un giorno è dovuto dalla mezzanotte successiva
+    assert summary_target(datetime(2026, 9, 25, 23, 59, tzinfo=ROME), 24) == date(2026, 9, 24)
+    assert summary_target(datetime(2026, 9, 26, 0, 0, tzinfo=ROME), 24) == date(2026, 9, 25)
+
+
+def test_daily_window_midnight_is_calendar_day():
+    start, end = daily_window(date(2026, 10, 25), 24, ROME)  # giornata di 25 ore (fine ora legale)
+    assert start == datetime(2026, 10, 25, 0, tzinfo=ROME) and end == datetime(2026, 10, 26, 0, tzinfo=ROME)
+    assert end.timestamp() - start.timestamp() == 25 * 3600
+
+
 def test_daily_window_handles_dst():
     # 25 ottobre 2026: in Italia finisce l'ora legale (giornata di 25 ore)
     start, end = daily_window(date(2026, 10, 25), 23, ROME)

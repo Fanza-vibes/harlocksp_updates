@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta, tzinfo
 from typing import Any
-from zoneinfo import ZoneInfo
 
 Match = dict[str, Any]
 
@@ -121,20 +120,34 @@ def end_time(match: Match) -> int:
 
 
 def in_window(matches: list[Match], start: datetime, end: datetime) -> list[Match]:
-    """Partite *terminate* in [start, end): una partita a cavallo delle 23 finisce nel giorno dopo."""
+    """Partite *terminate* in [start, end).
+
+    Una partita a cavallo dell'ora del riepilogo conta nella giornata in cui finisce.
+    """
     lo, hi = start.timestamp(), end.timestamp()
     return [m for m in matches if lo <= end_time(m) < hi]
 
 
+def window_end(day: date, hour: int, tz: tzinfo) -> datetime:
+    """Fine della giornata di `day` per il riepilogo: le `hour` (1-24) di quel giorno.
+
+    Con hour=24 è la mezzanotte del giorno dopo, così il riepilogo copre il giorno di calendario.
+    """
+    return datetime.combine(day, time(0), tzinfo=tz) + timedelta(hours=hour)
+
+
 def summary_target(now: datetime, hour: int) -> date:
-    """Il giorno il cui riepilogo è 'dovuto' adesso: oggi dopo l'ora X, altrimenti ieri."""
-    return now.date() if now.hour >= hour else now.date() - timedelta(days=1)
+    """Il giorno il cui riepilogo è 'dovuto' adesso: l'ultimo la cui giornata è già finita.
+
+    Con hour=23: oggi dalle 23 in poi, altrimenti ieri. Con hour=24: sempre ieri.
+    """
+    today = now.date()
+    return today if now >= window_end(today, hour, now.tzinfo or UTC) else today - timedelta(days=1)
 
 
-def daily_window(day: date, hour: int, tz: ZoneInfo) -> tuple[datetime, datetime]:
+def daily_window(day: date, hour: int, tz: tzinfo) -> tuple[datetime, datetime]:
     """Dalle `hour` del giorno prima alle `hour` di `day`: nessuna partita resta fuori."""
-    end = datetime.combine(day, time(hour), tzinfo=tz)
-    return end - timedelta(days=1), end
+    return window_end(day - timedelta(days=1), hour, tz), window_end(day, hour, tz)
 
 
 def start_of_day(now: datetime) -> datetime:

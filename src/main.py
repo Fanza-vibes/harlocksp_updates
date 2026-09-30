@@ -3,7 +3,7 @@
 1. nuove partite → scheda nel canale
 2. replay analizzati → curiosità in risposta alla scheda
 3. messaggi privati al bot → risposte ai comandi
-4. dopo le 23 (ora italiana) → riepilogo giornaliero nel canale (o messaggio di riposo)
+4. a fine giornata (mezzanotte, ora italiana) → riepilogo nel canale (o messaggio di riposo)
 
 Uso: python -m src.main [--dry-run] [--last N] [--comando "/riepilogo oggi"] [--partita ID]
                         [--config config.yaml] [--state state.json]

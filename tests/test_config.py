@@ -60,7 +60,13 @@ def test_defaults_timezone_and_hour(cfg_file):
 
 
 @pytest.mark.parametrize(
-    "extra", ["timezone: Marte/Base\n", "daily_summary_hour: 24\n", "daily_summary_hour: sera\n"]
+    "extra",
+    [
+        "timezone: Marte/Base\n",
+        "daily_summary_hour: 25\n",
+        "daily_summary_hour: 0\n",
+        "daily_summary_hour: sera\n",
+    ],
 )
 def test_invalid_timezone_or_hour(cfg_file, extra):
     cfg_file.write_text(cfg_file.read_text() + extra)
