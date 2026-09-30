@@ -4,5 +4,6 @@ player_id: 295689331
 display_name: HarlockSP
 # Fuso orario per i riepiloghi (il cron di GitHub è in UTC: la conversione la fa il codice)
 timezone: Europe/Rome
-# Riepilogo giornaliero nel canale a quest'ora (messaggio di riposo se non ha giocato). null = disattivato
-daily_summary_hour: 23
+# Riepilogo della giornata nel canale a quest'ora, da 1 a 24 (24 = mezzanotte, copre l'intera giornata);
+# messaggio di riposo se non ha giocato. null = disattivato
+daily_summary_hour: 24

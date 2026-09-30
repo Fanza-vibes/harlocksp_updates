@@ -26,7 +26,7 @@ class Config:
     player_id: int
     display_name: str
     timezone: str = "Europe/Rome"
-    daily_summary_hour: int | None = 23  # None = riepilogo giornaliero disattivato
+    daily_summary_hour: int | None = 23  # 1-24 (24 = mezzanotte); None = riepilogo disattivato
     telegram_token: str | None = field(default=None, repr=False)
     telegram_chat_id: str | None = field(default=None, repr=False)
 
@@ -72,8 +72,10 @@ def load_config(
         raise ConfigError(f"{path}: fuso orario sconosciuto: {timezone!r}") from exc
 
     hour = data.get("daily_summary_hour", 23)
-    if hour is not None and (isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23):
-        raise ConfigError(f"{path}: 'daily_summary_hour' deve essere un'ora tra 0 e 23 oppure null")
+    if hour is not None and (isinstance(hour, bool) or not isinstance(hour, int) or not 1 <= hour <= 24):
+        raise ConfigError(
+            f"{path}: 'daily_summary_hour' deve essere un'ora tra 1 e 24 (24 = mezzanotte) oppure null"
+        )
 
     return Config(
         player_id=player_id,
