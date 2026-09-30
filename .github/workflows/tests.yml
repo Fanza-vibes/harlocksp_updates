@@ -4,8 +4,6 @@ name: Test
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - state.json
   pull_request:
 
 permissions:

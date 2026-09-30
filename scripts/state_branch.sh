@@ -2,7 +2,7 @@
 # Stato del bot su un branch dedicato, separato dal codice.
 #
 #   state_branch.sh load   copia state.json dal branch dello stato nella cartella di lavoro
-#                          (se il branch non esiste ancora, resta lo state.json di main: migrazione)
+#                          (se il branch non esiste, nessuno stato: il bot fa il primo avvio e non invia nulla)
 #   state_branch.sh save   se state.json è cambiato, lo committa sul branch dello stato e fa push
 #
 # Così su main arrivano solo modifiche al codice, mai i salvataggi automatici del bot.
@@ -13,18 +13,24 @@ BRANCH="${STATE_BRANCH:-bot-state}"
 FILE="state.json"
 WORKTREE="${RUNNER_TEMP:-/tmp}/bot-state"
 
-branch_exists() {
-  git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1
+# 0 = il branch esiste, 2 = non esiste, altro = errore (es. rete): mai confondere un errore
+# con "branch assente", altrimenti si ripartirebbe da uno stato vuoto.
+branch_status() {
+  local rc=0
+  git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1 || rc=$?
+  echo "$rc"
 }
 
 load() {
-  if branch_exists; then
-    git fetch --quiet --depth=1 origin "$BRANCH"
-    git show "FETCH_HEAD:$FILE" > "$FILE"
-    echo "Stato letto dal branch $BRANCH"
-  else
-    echo "Branch $BRANCH non ancora creato: uso $FILE di main (primo avvio dopo la migrazione)"
-  fi
+  case "$(branch_status)" in
+    0)
+      git fetch --quiet --depth=1 origin "$BRANCH"
+      git show "FETCH_HEAD:$FILE" > "$FILE"
+      echo "Stato letto dal branch $BRANCH"
+      ;;
+    2) echo "Branch $BRANCH non trovato: primo avvio (si salva l'ultima partita, nessun invio)" ;;
+    *) echo "Impossibile controllare il branch $BRANCH: giro annullato, stato invariato" >&2; return 1 ;;
+  esac
 }
 
 save() {
@@ -35,9 +41,14 @@ save() {
   git config user.name "github-actions[bot]"
   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
   rm -rf "$WORKTREE"
-  if branch_exists; then
+  local status
+  status="$(branch_status)"
+  if [ "$status" = 0 ]; then
     git fetch --quiet --depth=1 origin "$BRANCH"
     git worktree add --quiet -B "$BRANCH" "$WORKTREE" FETCH_HEAD
+  elif [ "$status" != 2 ]; then
+    echo "Impossibile controllare il branch $BRANCH: stato non salvato" >&2
+    return 1
   else
     git worktree add --quiet --detach "$WORKTREE"
     git -C "$WORKTREE" checkout --quiet --orphan "$BRANCH"

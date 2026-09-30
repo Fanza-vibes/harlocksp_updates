@@ -3,7 +3,7 @@
 1. nuove partite → scheda nel canale
 2. replay analizzati → curiosità in risposta alla scheda
 3. messaggi privati al bot → risposte ai comandi
-4. a fine giornata (mezzanotte, ora italiana) → riepilogo nel canale (o messaggio di riposo)
+4. a fine giornata (00:15, ora italiana) → riepilogo nel canale (o messaggio di riposo)
 
 Uso: python -m src.main [--dry-run] [--last N] [--comando "/riepilogo oggi"] [--partita ID]
                         [--config config.yaml] [--state state.json]
@@ -15,7 +15,7 @@ import argparse
 import logging
 import sys
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Protocol
 from zoneinfo import ZoneInfo
@@ -131,7 +131,7 @@ def send_daily_summary(
     hour = config.daily_summary_hour
     if hour is None:
         return EXIT_OK
-    target = summary_target(now, hour)
+    target = summary_target(now, hour, timedelta(minutes=config.daily_summary_delay))
     if state.last_summary_date is None:
         state.last_summary_date = target.isoformat()  # primo avvio: si parte dal prossimo
         return EXIT_OK

@@ -7,3 +7,6 @@ timezone: Europe/Rome
 # Riepilogo della giornata nel canale a quest'ora, da 1 a 24 (24 = mezzanotte, copre l'intera giornata);
 # messaggio di riposo se non ha giocato. null = disattivato
 daily_summary_hour: 24
+# Minuti di attesa dopo la fine della giornata prima del riepilogo (0-59): OpenDota registra le
+# partite con qualche minuto di ritardo, così anche quelle finite poco prima di mezzanotte entrano.
+daily_summary_delay: 15

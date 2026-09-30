@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from src.stats import daily_window, in_window, streak_before, streak_until, summarize, summary_target
@@ -50,6 +50,13 @@ def test_summary_target_midnight():
     # con 24 il riepilogo di un giorno è dovuto dalla mezzanotte successiva
     assert summary_target(datetime(2026, 9, 25, 23, 59, tzinfo=ROME), 24) == date(2026, 9, 24)
     assert summary_target(datetime(2026, 9, 26, 0, 0, tzinfo=ROME), 24) == date(2026, 9, 25)
+
+
+def test_summary_target_with_delay():
+    delay = timedelta(minutes=15)
+    assert summary_target(datetime(2026, 9, 26, 0, 14, tzinfo=ROME), 24, delay) == date(2026, 9, 24)
+    assert summary_target(datetime(2026, 9, 26, 0, 15, tzinfo=ROME), 24, delay) == date(2026, 9, 25)
+    assert summary_target(datetime(2026, 9, 26, 23, 59, tzinfo=ROME), 24, delay) == date(2026, 9, 25)
 
 
 def test_daily_window_midnight_is_calendar_day():
