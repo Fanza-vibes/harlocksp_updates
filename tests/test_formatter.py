@@ -1,3 +1,6 @@
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
+
 import pytest
 
 from src.formatter import (
@@ -5,6 +8,7 @@ from src.formatter import (
     format_duration,
     format_match,
     format_rest_day,
+    format_start,
     format_summary,
     highlights,
     is_radiant,
@@ -55,6 +59,26 @@ def test_format_win_radiant():
     assert "KDA 6.7" in text and "🌟" not in text
     assert "https://www.dotabuff.com/matches/123" in text
     assert "https://www.opendota.com/matches/123" in text
+
+
+def test_format_start_local_time():
+    rome = ZoneInfo("Europe/Rome")
+    now = datetime(2026, 10, 2, 22, 0, tzinfo=rome)
+    ts = int(datetime(2026, 10, 2, 21, 34, tzinfo=rome).timestamp())
+    assert format_start(ts, now) == "21:34"
+    assert format_start(ts - 86400, now) == "ieri 21:34"
+    assert format_start(ts - 4 * 86400, now) == "28 settembre 21:34"
+    # timestamp UTC convertito in ora italiana (ora legale: +2)
+    assert format_start(int(datetime(2026, 10, 2, 19, 34, tzinfo=UTC).timestamp()), now) == "21:34"
+
+
+def test_format_match_shows_start_only_with_now():
+    rome = ZoneInfo("Europe/Rome")
+    now = datetime(2026, 10, 2, 22, 0, tzinfo=rome)
+    m = make_match(1, start_time=int(datetime(2026, 10, 2, 21, 34, tzinfo=rome).timestamp()))
+    assert "🕘 Inizio: 21:34 · ⏱ Durata: 38:21" in format_match(m, "Axe", "H", now=now)
+    assert "Inizio" not in format_match(m, "Axe", "H")
+    assert "Inizio" not in format_match(make_match(1, start_time=None), "Axe", "H", now=now)
 
 
 def test_format_loss_dire():

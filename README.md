@@ -8,7 +8,7 @@ Progetto per divertimento, senza scopo commerciale e a costo zero.
 
 ## Cosa fa
 
-- 📣 **Una scheda per ogni partita**: vittoria o sconfitta, eroe, K/D/A, GPM/XPM, durata, modalità e
+- 📣 **Una scheda per ogni partita**: vittoria o sconfitta, eroe, K/D/A, GPM/XPM, ora di inizio, durata, modalità e
   link a Dotabuff e OpenDota. Le partite notevoli hanno la 🌟, le serie di vittorie e sconfitte
   vengono sottolineate.
 - 🔍 **Curiosità della partita**: dopo qualche minuto arriva, in risposta alla scheda, un secondo
@@ -29,7 +29,8 @@ Esempi:
 🦸 Eroe: Anti-Mage (Dire)
 ⚔️ K/D/A: 14/0/12 (KDA 26.0)
 💰 GPM/XPM: 742/810 · 🗡 LH: 388
-⏱ Durata: 43:10 · 🎮 Classificata · All Pick
+🕘 Inizio: 21:34 · ⏱ Durata: 43:10
+🎮 Classificata · All Pick
 🛡 Partita perfetta: 0 morti!
 ```
 
