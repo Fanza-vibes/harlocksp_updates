@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from html import escape
 from typing import Any
 
@@ -91,6 +91,18 @@ def format_date(d: date) -> str:
     return f"{WEEKDAYS[d.weekday()]} {d.day} {MONTHS[d.month - 1]}"
 
 
+def format_start(start_time: int, now: datetime) -> str:
+    """Ora di inizio nel fuso di `now`: '21:34', 'ieri 23:50' oppure '28 settembre 21:34'."""
+    start = datetime.fromtimestamp(start_time, now.tzinfo)
+    clock = start.strftime("%H:%M")
+    days_ago = (now.date() - start.date()).days
+    if days_ago <= 0:
+        return clock
+    if days_ago == 1:
+        return f"ieri {clock}"
+    return f"{start.day} {MONTHS[start.month - 1]} {clock}"
+
+
 def mode_name(game_mode: int | None, lobby_type: int | None) -> str:
     """Nome leggibile della modalità: 'Turbo', 'Classificata · All Pick', 'Battle Cup · Captains Mode'…"""
     mode = GAME_MODES.get(game_mode or 0, f"Modalità {game_mode}")
@@ -149,12 +161,18 @@ def highlights(match: dict[str, Any]) -> list[str]:
 
 
 def format_match(
-    match: dict[str, Any], hero_name: str, display_name: str, streak: int = 0, previous_streak: int = 0
+    match: dict[str, Any],
+    hero_name: str,
+    display_name: str,
+    streak: int = 0,
+    previous_streak: int = 0,
+    now: datetime | None = None,
 ) -> str:
     """Scheda di una partita per il canale (HTML).
 
     `streak` è la serie in corso *dopo* questa partita (positiva = vittorie, negativa = sconfitte),
     `previous_streak` quella prima: serve per il messaggio "maledizione spezzata".
+    `now` (con fuso orario) serve a scrivere l'ora di inizio in ora locale; senza, l'ora si omette.
     """
     win = is_win(match)
     side = "Radiant" if is_radiant(int(match.get("player_slot") or 0)) else "Dire"
@@ -163,6 +181,10 @@ def format_match(
     if special:
         header = "🌟 " + header
     k, d, a = kda(match)
+    duration = f"⏱ Durata: {format_duration(match.get('duration') or 0)}"
+    start_time = match.get("start_time")
+    if now is not None and isinstance(start_time, int) and start_time > 0:
+        duration = f"🕘 Inizio: {format_start(start_time, now)} · {duration}"
     lines = [
         header,
         *streak_lines(streak, previous_streak),
@@ -171,8 +193,8 @@ def format_match(
         f"⚔️ K/D/A: <b>{k}/{d}/{a}</b> (KDA {kda_ratio(match):.1f})",
         f"💰 GPM/XPM: {int(match.get('gold_per_min') or 0)}/{int(match.get('xp_per_min') or 0)}"
         f" · 🗡 LH: {int(match.get('last_hits') or 0)}",
-        f"⏱ Durata: {format_duration(match.get('duration') or 0)}"
-        f" · 🎮 {escape(mode_name(match.get('game_mode'), match.get('lobby_type')))}",
+        duration,
+        f"🎮 {escape(mode_name(match.get('game_mode'), match.get('lobby_type')))}",
         *special,
         f"🔗 {match_links(int(match['match_id']))}",
     ]

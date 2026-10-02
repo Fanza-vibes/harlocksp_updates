@@ -109,7 +109,7 @@ def reply_for(text: str, data: MatchData, display_name: str, now: datetime) -> s
     name, arg = cmd
     try:
         if name == "ultima":
-            return _last_match(data, display_name)
+            return _last_match(data, display_name, now)
         if name == "riepilogo":
             return _summary(arg or "oggi", data, display_name, now)
     except OpenDotaError:
@@ -117,13 +117,14 @@ def reply_for(text: str, data: MatchData, display_name: str, now: datetime) -> s
     return "🤔 Comando sconosciuto.\n\n" + help_text(display_name)
 
 
-def _last_match(data: MatchData, display_name: str) -> str:
+def _last_match(data: MatchData, display_name: str, now: datetime) -> str:
     if not data.recent:
         return "Nessuna partita trovata."
     last = data.recent[-1]
     streak = streak_until(data.recent, last["match_id"])
     previous = streak_before(data.recent, last["match_id"])
-    return format_match(last, data.hero_name(last.get("hero_id")), display_name, streak, previous)
+    hero = data.hero_name(last.get("hero_id"))
+    return format_match(last, hero, display_name, streak, previous, now)
 
 
 def _summary(period: str, data: MatchData, display_name: str, now: datetime) -> str:

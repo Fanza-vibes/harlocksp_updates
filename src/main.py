@@ -100,7 +100,7 @@ def notify_new_matches(
         streak = streak_until(data.recent, match["match_id"])
         previous = streak_before(data.recent, match["match_id"])
         hero = data.hero_name(match.get("hero_id"))
-        text = format_match(match, hero, config.display_name, streak, previous)
+        text = format_match(match, hero, config.display_name, streak, previous, data.now)
         try:
             kinds = match_kinds(is_win(match), streak, previous)
             message_id = send_with_media(sender, text, kinds, media_root)
