@@ -1,5 +1,5 @@
 {
-  "last_match_id": 9036938800,
+  "last_match_id": 9039741329,
   "heroes": {
     "1": "Anti-Mage",
     "2": "Axe",
@@ -129,8 +129,16 @@
     "145": "Kez",
     "155": "Largo"
   },
-  "heroes_updated_at": "2026-10-02T22:15:50Z",
+  "heroes_updated_at": "2026-10-11T12:35:31Z",
   "telegram_offset": 973005540,
   "last_summary_date": "2026-10-10",
-  "commands_version": 1
+  "commands_version": 1,
+  "pending_trivia": [
+    {
+      "match_id": 9039741329,
+      "message_id": 91,
+      "since": 1791722131,
+      "requested": true
+    }
+  ]
 }
