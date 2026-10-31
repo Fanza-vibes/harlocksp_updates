@@ -132,13 +132,5 @@
   "heroes_updated_at": "2026-10-25T23:15:46Z",
   "telegram_offset": 973005540,
   "last_summary_date": "2026-10-30",
-  "commands_version": 1,
-  "pending_trivia": [
-    {
-      "match_id": 9069911197,
-      "message_id": 226,
-      "since": 1793452548,
-      "requested": true
-    }
-  ]
+  "commands_version": 1
 }
