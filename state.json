@@ -135,12 +135,6 @@
   "commands_version": 1,
   "pending_trivia": [
     {
-      "match_id": 9093177779,
-      "message_id": 335,
-      "since": 1794855046,
-      "requested": true
-    },
-    {
       "match_id": 9093275004,
       "message_id": 337,
       "since": 1794858934,
