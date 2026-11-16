@@ -1,5 +1,5 @@
 {
-  "last_match_id": 9093177779,
+  "last_match_id": 9093275004,
   "heroes": {
     "1": "Anti-Mage",
     "2": "Axe",
@@ -138,6 +138,12 @@
       "match_id": 9093177779,
       "message_id": 335,
       "since": 1794855046,
+      "requested": true
+    },
+    {
+      "match_id": 9093275004,
+      "message_id": 337,
+      "since": 1794858934,
       "requested": true
     }
   ]
